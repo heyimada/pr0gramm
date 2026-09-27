@@ -90,7 +90,7 @@ struct ReelsScreen: View {
                                 Button {
                                     withAnimation(.snappy(duration: 0.25)) { selection = source }
                                 } label: {
-                                    Text(title(for: source))
+                                    Text(app.title(for: source))
                                         .font(.system(size: 22, weight: .bold))
                                         .foregroundStyle(.white.opacity(isOn ? 1 : 0.5))
                                         .lineLimit(1)
@@ -140,12 +140,6 @@ struct ReelsScreen: View {
             }
         }
         .animation(.snappy, value: filter.hasTagFilter)
-    }
-
-    /// Streams capitalized like Instagram's tabs; custom feeds as named.
-    private func title(for source: FeedSource) -> String {
-        if case .stream(let stream) = source { return stream.title.capitalized }
-        return app.title(for: source)
     }
 
     /// "#kadse +2" or "ohne #süßvieh".
