@@ -66,15 +66,13 @@ struct ReelsScreen: View {
         .onDisappear { pool.pauseAll() }
     }
 
-    /// Instagram-style header: filter on the left, then the feeds as plain text tabs over the video.
+    /// Instagram-style header: Reels filter on the left, the feeds as plain text tabs, content filter on the right.
     private var controls: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Button { showsFilter = true } label: {
-                    Image(systemName: filter.hasTagFilter
-                          ? "line.3.horizontal.decrease.circle.fill"
-                          : "line.3.horizontal.decrease")
-                        .font(.system(size: 22, weight: .semibold))
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(filter.hasTagFilter ? Color.pr0Orange : .white)
                         .frame(width: 36, height: 44)
                         .contentShape(.rect)
@@ -102,14 +100,18 @@ struct ReelsScreen: View {
                                 .id(source)
                             }
                         }
-                        .padding(.trailing, 16)
+                        .padding(.trailing, 8)
                     }
                     .scrollIndicators(.hidden)
                     .onAppear { proxy.scrollTo(current, anchor: .center) }
                     .onChange(of: current) { withAnimation { proxy.scrollTo(current, anchor: .center) } }
                 }
+
+                // SFW / NSFW / NSFL / POL, which the hidden toolbar would otherwise hold.
+                FilterMenu(plain: true)
             }
             .padding(.leading, 12)
+            .padding(.trailing, 6)
             .shadow(color: .black.opacity(0.4), radius: 6)
 
             if filter.hasTagFilter {

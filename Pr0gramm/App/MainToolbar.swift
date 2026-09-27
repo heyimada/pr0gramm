@@ -26,6 +26,8 @@ struct MainToolbar: ToolbarContent {
 struct FilterMenu: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    /// A bare white icon for overlays like the Reels header, instead of the toolbar circle.
+    var plain = false
 
     private let flags: [(ContentFlags, String)] = [
         (.sfw, "SFW"), (.nsfw, "NSFW"), (.nsfl, "NSFL"), (.pol, "POL"),
@@ -43,8 +45,18 @@ struct FilterMenu: View {
                 }
             }
         } label: {
-            BarCircle { Image(systemName: "line.3.horizontal.decrease") }
-                .accessibilityLabel("Filter")
+            Group {
+                if plain {
+                    Image(systemName: "line.3.horizontal.decrease")
+                        .font(.system(size: 21, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
+                } else {
+                    BarCircle { Image(systemName: "line.3.horizontal.decrease") }
+                }
+            }
+            .accessibilityLabel("Filter")
         }
         .menuActionDismissBehavior(.disabled)
     }
