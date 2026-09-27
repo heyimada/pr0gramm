@@ -56,7 +56,7 @@ struct CustomFeed: Codable, Hashable, Identifiable {
 }
 
 /// One entry of the Feed tab's switcher and of the "Standard-Feed" setting.
-enum FeedSource: Hashable, Codable {
+nonisolated enum FeedSource: Hashable, Codable, Sendable {
     case stream(FeedStream)
     case custom(CustomFeed.ID)
 }

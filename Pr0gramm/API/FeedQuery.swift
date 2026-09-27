@@ -1,7 +1,7 @@
 import Foundation
 
 /// The site's streams. "beliebt · neu · müll" are also the categories you can search in.
-enum FeedStream: String, Hashable, Codable, CaseIterable, Identifiable {
+nonisolated enum FeedStream: String, Hashable, Codable, CaseIterable, Identifiable, Sendable {
     case top
     case new
     case junk

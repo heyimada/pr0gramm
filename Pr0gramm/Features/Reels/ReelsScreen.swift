@@ -41,7 +41,7 @@ struct ReelsScreen: View {
                     .scrollTargetLayout()
                 }
                 .scrollTargetBehavior(.paging)
-                .scrollPosition(id: Binding(get: { current }, set: { if let source = $0 { selection = source } }))
+                .modifier(FeedPaging(current: current) { selection = $0 })
                 .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
             }
