@@ -24,7 +24,7 @@ struct FeedSettingsView: View {
             } header: {
                 Text("Standard-Feed")
             } footer: {
-                Text("Damit starten Start und Feed. Reels, Tags und die Suche öffnen im selben Stream.")
+                Text("Damit starten Start, Feed und Reels. Tags und die Suche öffnen im selben Stream. Ist ein eigener Feed wegen der Filter ausgeblendet, gilt sein Stream.")
             }
 
             Section {
@@ -32,7 +32,7 @@ struct FeedSettingsView: View {
                     Button { editedFeed = feed } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(feed.name).foregroundStyle(Color.pr0Text)
-                            Text("\(feed.tags) · \(feed.stream.title)")
+                            Text(([feed.tags, feed.stream.title] + ContentFlags.filterTitles(in: feed.flags)).joined(separator: " · "))
                                 .font(.caption)
                                 .foregroundStyle(Color.pr0Secondary)
                                 .lineLimit(1)
@@ -46,7 +46,7 @@ struct FeedSettingsView: View {
             } header: {
                 Text("Eigene Feeds")
             } footer: {
-                Text("Eigene Feeds erscheinen im Feed-Tab neben beliebt, neu und müll. Du kannst auch eine Suche mit dem Lesezeichen speichern.")
+                Text("Eigene Feeds erscheinen im Feed-Tab und in Reels neben beliebt, neu und müll, auf Wunsch nur bei bestimmten Filtern. Du kannst auch eine Suche mit dem Lesezeichen speichern.")
             }
         }
         .scrollContentBackground(.hidden)
@@ -62,6 +62,17 @@ struct FeedSettingsView: View {
         }
         .sheet(item: $editedFeed) { CustomFeedEditor(feed: $0, isNew: false) }
         .sheet(isPresented: $addsFeed) { CustomFeedEditor(feed: CustomFeed(), isNew: true) }
+    }
+}
+
+extension ContentFlags {
+    /// The filters a user can switch, in the order the settings show them.
+    static let filters: [(flag: ContentFlags, title: String)] = [
+        (.sfw, "SFW"), (.nsfw, "NSFW"), (.nsfl, "NSFL"), (.pol, "POL"),
+    ]
+
+    static func filterTitles(in flags: ContentFlags) -> [String] {
+        filters.filter { flags.contains($0.flag) }.map(\.title)
     }
 }
 
@@ -103,6 +114,22 @@ struct CustomFeedEditor: View {
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
+                }
+
+                Section {
+                    ForEach(ContentFlags.filters, id: \.title) { filter in
+                        Toggle(isOn: Binding {
+                            feed.flags.contains(filter.flag)
+                        } set: { isOn in
+                            if isOn { feed.flags.insert(filter.flag) } else { feed.flags.remove(filter.flag) }
+                        }) {
+                            Text(filter.title)
+                        }
+                    }
+                } header: {
+                    Text("Nur anzeigen bei")
+                } footer: {
+                    Text("Ohne Auswahl ist der Feed immer da. Sonst erscheint er nur, wenn ausschließlich ausgewählte Filter an sind: Ein NSFW-Feed verschwindet also, sobald auch SFW an ist.")
                 }
 
                 Section {

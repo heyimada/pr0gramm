@@ -82,6 +82,8 @@ struct FeedGrid<Header: View>: View {
     @Namespace private var namespace
     let model: FeedModel
     var showsBackground = true
+    /// Called with the vertical scroll offset, measured from the top of the content.
+    var onScroll: ((CGFloat) -> Void)?
     @ViewBuilder var header: Header
 
     #if os(visionOS)
@@ -140,6 +142,9 @@ struct FeedGrid<Header: View>: View {
                 .padding(.top, 100)
             }
         }
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
+            onScroll?(offset)
+        }
         .refreshable { await model.reload(flags: session.flags) }
         .task(id: session.flags) { await model.loadIfNeeded(flags: session.flags) }
         .background(showsBackground ? Color.pr0Background : .clear)
@@ -147,8 +152,8 @@ struct FeedGrid<Header: View>: View {
 }
 
 extension FeedGrid where Header == EmptyView {
-    init(model: FeedModel) {
-        self.init(model: model) { EmptyView() }
+    init(model: FeedModel, onScroll: ((CGFloat) -> Void)? = nil) {
+        self.init(model: model, onScroll: onScroll) { EmptyView() }
     }
 }
 
@@ -160,28 +165,116 @@ struct StreamsScreen: View {
     /// `nil` until the user picks something, so the tab follows changes to the default feed.
     @State private var selection: FeedSource?
     @State private var cache = FeedCache()
+    @State private var collapse = ScrollCollapse()
+    @State private var switcherHeight: CGFloat = 56
 
     private var sources: [FeedSource] {
         FeedStream.searchable.map(FeedSource.stream)
             + (session.isLoggedIn ? [.stream(.subscribed)] : [])
-            + app.customFeeds.map { .custom($0.id) }
+            + app.visibleCustomFeeds(for: session.flags).map { .custom($0.id) }
     }
 
     private var current: FeedSource {
-        let source = selection ?? app.defaultSource
+        let source = selection ?? app.defaultSource(for: session.flags)
         return sources.contains(source) ? source : .stream(.top)
     }
 
     var body: some View {
-        let query = app.query(for: current) ?? .top
-        FeedGrid(model: cache.model(for: query))
-            .id(query)
-            .safeAreaInset(edge: .top) {
-                SegmentCapsule(options: sources, selection: Binding(get: { current }, set: { selection = $0 }),
-                               title: app.title(for:))
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
+        // Pages span the whole screen so posts scroll under the toolbar, the floating switcher and
+        // the tab bar; margins keep the first and last rows clear of them. A paging scroll view
+        // rather than a page-style TabView, whose pages come with insets of their own.
+        GeometryReader { outer in
+            let top = outer.safeAreaInsets.top + switcherHeight
+            let bottom = outer.safeAreaInsets.bottom
+            GeometryReader { proxy in
+                ScrollView(.horizontal) {
+                    // Not lazy, so every feed keeps its scroll position.
+                    HStack(spacing: 0) {
+                        ForEach(sources, id: \.self) { source in
+                            let query = app.query(for: source) ?? .top
+                            FeedGrid(model: cache.model(for: query), onScroll: collapse.scrolled(to:))
+                                .contentMargins(.top, top, for: .scrollContent)
+                                .contentMargins(.bottom, bottom, for: .scrollContent)
+                                .contentMargins(.top, top, for: .scrollIndicators)
+                                .contentMargins(.bottom, bottom, for: .scrollIndicators)
+                                .id(query)
+                                .frame(width: proxy.size.width, height: proxy.size.height)
+                                .id(source)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: Binding(get: { current }, set: { if let source = $0 { selection = source } }))
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
             }
+            .ignoresSafeArea()
+        }
+        .background(Color.pr0Background)
+        .onChange(of: current) { collapse.reset() }
+        .overlay(alignment: .top) {
+            CollapsingSegmentCapsule(options: sources, selection: Binding(get: { current }, set: { selection = $0 }),
+                                     title: app.title(for:), isCollapsed: collapse.isCollapsed, onExpand: collapse.expand)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+                .onGeometryChange(for: CGFloat.self, of: \.size.height) { height in
+                    // Only the expanded height counts, so collapsing doesn't shift the posts.
+                    if !collapse.isCollapsed { switcherHeight = height }
+                }
+        }
+    }
+}
+
+/// Collapses a bar after scrolling down a bit and brings it back after scrolling up a bit,
+/// like the tab bar's minimize behavior. Only `isCollapsed` is observed, so scrolling itself
+/// doesn't re-render anything.
+@Observable
+final class ScrollCollapse {
+    private(set) var isCollapsed = false
+    /// Offset where the current direction started: the lowest point while expanded, the highest while collapsed.
+    /// `nil` after switching feeds, until the new feed reports its offset.
+    @ObservationIgnored private var anchor: CGFloat?
+    @ObservationIgnored private var offset: CGFloat = 0
+
+    private static let threshold: CGFloat = 24
+    /// Always expanded this close to the top.
+    private static let topZone: CGFloat = 40
+
+    func scrolled(to offset: CGFloat) {
+        self.offset = offset
+        if offset < Self.topZone {
+            set(collapsed: false)
+            return
+        }
+        guard let start = anchor else {
+            anchor = offset
+            return
+        }
+        let delta = offset - start
+        if isCollapsed ? delta > 0 : delta < 0 {
+            anchor = offset
+        } else if abs(delta) > Self.threshold {
+            set(collapsed: !isCollapsed)
+        }
+    }
+
+    func expand() {
+        set(collapsed: false)
+    }
+
+    /// Expands for a newly selected feed, whose scroll position is unrelated to the last one's.
+    func reset() {
+        anchor = nil
+        guard isCollapsed else { return }
+        withAnimation(.spring(duration: 0.4, bounce: 0.2)) { isCollapsed = false }
+    }
+
+    private func set(collapsed: Bool) {
+        anchor = offset
+        guard collapsed != isCollapsed else { return }
+        withAnimation(.spring(duration: 0.4, bounce: 0.2)) { isCollapsed = collapsed }
     }
 }
 

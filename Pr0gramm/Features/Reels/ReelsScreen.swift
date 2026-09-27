@@ -1,98 +1,116 @@
 import SwiftUI
 
-/// Full-screen vertical feed, one post per page, TikTok-style.
+/// Full-screen vertical feed, one post per page, TikTok-style. Swiping sideways switches between
+/// beliebt, neu, müll and the user's own feeds, like Instagram's "Für dich" and "Freunde".
 struct ReelsScreen: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
-    @State private var filter: ReelsFilter
-    @State private var model: FeedModel
-    @State private var currentID: Int?
+    @State private var filter = ReelsFilter.load()
+    /// `nil` until the user picks a feed, so Reels follows changes to the default feed.
+    @State private var selection: FeedSource?
     @State private var pool = ReelPlayerPool()
     @State private var insets = EdgeInsets()
     @State private var showsFilter = false
 
-    /// Tags come from the saved filter; the stream starts at the default feed's.
-    init(stream: FeedStream) {
-        var filter = ReelsFilter.load()
-        filter.stream = stream
-        _filter = State(initialValue: filter)
-        _model = State(initialValue: FeedModel(query: filter.query))
+    private var sources: [FeedSource] {
+        FeedStream.searchable.map(FeedSource.stream) + app.visibleCustomFeeds(for: session.flags).map { .custom($0.id) }
+    }
+
+    private var current: FeedSource {
+        let source = selection ?? app.defaultSource(for: session.flags)
+        return sources.contains(source) ? source : .stream(.top)
     }
 
     var body: some View {
         ZStack(alignment: .top) {
-            ScrollView(.vertical) {
-                LazyVStack(spacing: 0) {
-                    ForEach(model.items) { item in
-                        ReelPage(item: item, isActive: item.id == currentID, pool: pool, insets: insets,
-                                 onFilter: { tag, include in
-                                     if include { filter.include(tag) } else { filter.exclude(tag) }
-                                 })
-                            .containerRelativeFrame([.horizontal, .vertical])
-                            .task { await model.loadMoreIfNeeded(after: item, flags: session.flags) }
+            // A paging scroll view rather than a page-style TabView, whose pan gesture leaves the
+            // vertical reels stuck between pages. Not lazy, so every feed keeps its place.
+            GeometryReader { proxy in
+                ScrollView(.horizontal) {
+                    HStack(spacing: 0) {
+                        ForEach(sources, id: \.self) { source in
+                            ReelsFeed(query: filter.query(for: app.query(for: source) ?? .top),
+                                      isSelected: source == current, pool: pool, insets: insets,
+                                      onFilter: { tag, include in
+                                          if include { filter.include(tag) } else { filter.exclude(tag) }
+                                      })
+                                .frame(width: proxy.size.width, height: proxy.size.height)
+                                .id(source)
+                        }
                     }
+                    .scrollTargetLayout()
                 }
-                .scrollTargetLayout()
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: Binding(get: { current }, set: { if let source = $0 { selection = source } }))
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $currentID)
-            .scrollIndicators(.hidden)
             .ignoresSafeArea()
 
-            controls
+            // Keeps the header readable over bright posts, like Instagram's.
+            LinearGradient(colors: [.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
+                .frame(height: 140)
+                .ignoresSafeArea(edges: .top)
+                .allowsHitTesting(false)
 
-            if model.items.isEmpty {
-                Group {
-                    if let error = model.error {
-                        ErrorView(error: error) { await model.reload(flags: session.flags) }
-                    } else if model.atEnd {
-                        ContentUnavailableView("Nichts gefunden", systemImage: "play.slash")
-                    } else {
-                        ProgressView()
-                    }
-                }
-                .frame(maxHeight: .infinity)
-            }
+            controls
         }
         .background(Color.black)
+        #if os(iOS)
+        .toolbar(.hidden, for: .navigationBar)
+        #endif
         .onGeometryChange(for: EdgeInsets.self, of: \.safeAreaInsets) { insets = $0 }
-        .task(id: "\(filter.query.tags ?? "")-\(filter.stream.rawValue)-\(session.flags.rawValue)") {
-            let query = filter.query
-            if model.query != query {
-                model = FeedModel(query: query)
-                currentID = nil
-            }
-            await model.loadIfNeeded(flags: session.flags)
-            if currentID == nil || !model.items.contains(where: { $0.id == currentID }) {
-                currentID = model.items.first?.id
-            }
-            pool.focus(on: currentID, in: model.items)
-        }
-        .onChange(of: currentID) { pool.focus(on: currentID, in: model.items) }
         .onChange(of: filter) { filter.save() }
-        .onChange(of: app.defaultStream) { filter.stream = app.defaultStream }
         .sheet(isPresented: $showsFilter) { ReelsFilterSheet(filter: $filter) }
         .onAppear { pool.resume() }
         .onDisappear { pool.pauseAll() }
     }
 
+    /// Instagram-style header: filter on the left, then the feeds as plain text tabs over the video.
     private var controls: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 10) {
-                SegmentCapsule(options: FeedStream.searchable, selection: $filter.stream, title: \.title)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
                 Button { showsFilter = true } label: {
                     Image(systemName: filter.hasTagFilter
                           ? "line.3.horizontal.decrease.circle.fill"
                           : "line.3.horizontal.decrease")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(filter.hasTagFilter ? Color.pr0Orange : Color.pr0Text)
-                        .frame(width: 40, height: 40)
-                        .contentShape(.circle)
-                        .glassCircle()
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(filter.hasTagFilter ? Color.pr0Orange : .white)
+                        .frame(width: 36, height: 44)
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Reels-Filter")
+
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 14) {
+                            ForEach(sources, id: \.self) { source in
+                                let isOn = source == current
+                                Button {
+                                    withAnimation(.snappy(duration: 0.25)) { selection = source }
+                                } label: {
+                                    Text(title(for: source))
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundStyle(.white.opacity(isOn ? 1 : 0.5))
+                                        .lineLimit(1)
+                                        .padding(.vertical, 6)
+                                        .contentShape(.rect)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityAddTraits(isOn ? .isSelected : [])
+                                .id(source)
+                            }
+                        }
+                        .padding(.trailing, 16)
+                    }
+                    .scrollIndicators(.hidden)
+                    .onAppear { proxy.scrollTo(current, anchor: .center) }
+                    .onChange(of: current) { withAnimation { proxy.scrollTo(current, anchor: .center) } }
+                }
             }
+            .padding(.leading, 12)
+            .shadow(color: .black.opacity(0.4), radius: 6)
 
             if filter.hasTagFilter {
                 Button { showsFilter = true } label: {
@@ -117,11 +135,17 @@ struct ReelsScreen: View {
                     .glassCapsule()
                 }
                 .buttonStyle(.plain)
+                .padding(.leading, 16)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(.top, 6)
         .animation(.snappy, value: filter.hasTagFilter)
+    }
+
+    /// Streams capitalized like Instagram's tabs; custom feeds as named.
+    private func title(for source: FeedSource) -> String {
+        if case .stream(let stream) = source { return stream.title.capitalized }
+        return app.title(for: source)
     }
 
     /// "#kadse +2" or "ohne #süßvieh".
@@ -129,6 +153,81 @@ struct ReelsScreen: View {
         let count = filter.includedTags.count + filter.excludedTags.count
         let first = filter.includedTags.first.map { "#\($0)" } ?? filter.excludedTags.first.map { "ohne #\($0)" } ?? ""
         return count > 1 ? "\(first) +\(count - 1)" : first
+    }
+}
+
+/// One feed's vertical reels. Only the selected feed drives the shared player pool.
+private struct ReelsFeed: View {
+    @Environment(Session.self) private var session
+    let query: FeedQuery
+    let isSelected: Bool
+    let pool: ReelPlayerPool
+    let insets: EdgeInsets
+    let onFilter: (String, Bool) -> Void
+    @State private var model: FeedModel
+    @State private var currentID: Int?
+
+    init(query: FeedQuery, isSelected: Bool, pool: ReelPlayerPool, insets: EdgeInsets,
+         onFilter: @escaping (String, Bool) -> Void) {
+        self.query = query
+        self.isSelected = isSelected
+        self.pool = pool
+        self.insets = insets
+        self.onFilter = onFilter
+        _model = State(initialValue: FeedModel(query: query))
+    }
+
+    var body: some View {
+        // Pages span the whole screen, under the status and tab bars; `containerRelativeFrame`
+        // would stop at the safe area.
+        GeometryReader { proxy in
+            ScrollView(.vertical) {
+                LazyVStack(spacing: 0) {
+                    ForEach(model.items) { item in
+                        ReelPage(item: item, isActive: isSelected && item.id == currentID, pool: pool,
+                                 insets: insets, onFilter: onFilter)
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .task { await model.loadMoreIfNeeded(after: item, flags: session.flags) }
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $currentID)
+            .scrollIndicators(.hidden)
+        }
+        .ignoresSafeArea()
+        .overlay {
+            if model.items.isEmpty {
+                Group {
+                    if let error = model.error {
+                        ErrorView(error: error) { await model.reload(flags: session.flags) }
+                    } else if model.atEnd {
+                        ContentUnavailableView("Nichts gefunden", systemImage: "play.slash")
+                    } else {
+                        ProgressView()
+                    }
+                }
+            }
+        }
+        .task(id: "\(query.tags ?? "")-\(query.stream.rawValue)-\(session.flags.rawValue)") {
+            if model.query != query {
+                model = FeedModel(query: query)
+                currentID = nil
+            }
+            await model.loadIfNeeded(flags: session.flags)
+            if currentID == nil || !model.items.contains(where: { $0.id == currentID }) {
+                currentID = model.items.first?.id
+            }
+            focus()
+        }
+        .onChange(of: currentID) { focus() }
+        .onChange(of: isSelected) { focus() }
+    }
+
+    private func focus() {
+        guard isSelected else { return }
+        pool.focus(on: currentID, in: model.items)
     }
 }
 
@@ -163,6 +262,8 @@ private struct ReelPage: View {
 
     @State private var info: ItemInfo?
     @State private var showsComments = false
+    @AppStorage("reelsFitMedia") private var fitsMedia = false
+    @GestureState private var pinch: CGFloat = 1
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -188,22 +289,46 @@ private struct ReelPage: View {
         }
     }
 
-    @ViewBuilder
+    /// Media fills the screen by default; pinching in shows it whole at its own aspect ratio,
+    /// pinching out fills again. Remembered across reels.
     private var media: some View {
-        ZStack {
+        GeometryReader { proxy in
+            let fill = max(proxy.size.width / CGFloat(max(item.width, 1)), proxy.size.height / CGFloat(max(item.height, 1)))
+            let fit = min(proxy.size.width / CGFloat(max(item.width, 1)), proxy.size.height / CGFloat(max(item.height, 1)))
+            // Laid out at fill size and scaled down, so the video layer animates as one transform.
+            Group {
+                if item.isVideo {
+                    PlayerLayerView(player: pool.players[item.id]?.player, gravity: .resizeAspectFill)
+                } else {
+                    RemoteImage(url: item.mediaURL)
+                }
+            }
+            .frame(width: CGFloat(item.width) * fill, height: CGFloat(item.height) * fill)
+            .scaleEffect((fitsMedia ? fit / fill : 1) * pinch)
+            .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+        .background {
             AsyncImage(url: item.thumbnailURL) { $0.resizable().scaledToFill() } placeholder: { Color.black }
                 .blur(radius: 40)
                 .opacity(0.5)
-            if item.isVideo {
-                PlayerLayerView(player: pool.players[item.id]?.player)
-                    .contentShape(.rect)
-                    .onTapGesture { pool.isMuted.toggle() }
-            } else {
-                RemoteImage(url: item.mediaURL)
-            }
         }
-        .containerRelativeFrame([.horizontal, .vertical])
+        .clipped()
+        .contentShape(.rect)
+        .onTapGesture { if item.isVideo { pool.isMuted.toggle() } }
+        .simultaneousGesture(
+            MagnifyGesture()
+                .updating($pinch) { value, pinch, _ in
+                    pinch = min(max(value.magnification, 0.6), 1.5)
+                }
+                .onEnded { value in
+                    if value.magnification < 0.95 { fitsMedia = true }
+                    if value.magnification > 1.05 { fitsMedia = false }
+                }
+        )
+        .animation(.spring(duration: 0.35, bounce: 0.2), value: fitsMedia)
+        .animation(.interactiveSpring, value: pinch)
         .accessibilityLabel(item.isVideo ? "Video von \(item.user)" : "Bild von \(item.user)")
+        .accessibilityAction(named: fitsMedia ? "Bildschirm füllen" : "Ganz anzeigen") { fitsMedia.toggle() }
     }
 
     private var caption: some View {

@@ -134,6 +134,8 @@ struct SegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
     let title: (Value) -> String
+    /// Lets the glass morph into another shape with the same ID, see `CollapsingSegmentCapsule`.
+    var glassNamespace: Namespace.ID?
     @Namespace private var namespace
 
     var body: some View {
@@ -152,6 +154,7 @@ struct SegmentCapsule<Value: Hashable>: View {
         .glassBackgroundEffect(in: .capsule)
         #else
         .glassEffect(.regular, in: .capsule)
+        .modifier(GlassID(namespace: glassNamespace))
         #endif
     }
 
@@ -185,6 +188,59 @@ struct SegmentCapsule<Value: Hashable>: View {
         .fixedSize()
     }
 }
+
+/// A `SegmentCapsule` that shrinks into a pill with just the selected title while collapsed,
+/// the way the tab bar minimizes on scroll. Tapping the pill expands it again.
+struct CollapsingSegmentCapsule<Value: Hashable>: View {
+    let options: [Value]
+    @Binding var selection: Value
+    let title: (Value) -> String
+    let isCollapsed: Bool
+    let onExpand: () -> Void
+    @Namespace private var glass
+
+    var body: some View {
+        #if os(visionOS)
+        SegmentCapsule(options: options, selection: $selection, title: title)
+        #else
+        GlassEffectContainer {
+            if isCollapsed {
+                Button(action: onExpand) {
+                    HStack(spacing: 5) {
+                        Text(title(selection)).lineLimit(1)
+                        Image(systemName: "chevron.down").font(.caption2.weight(.bold))
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.pr0Text)
+                    .padding(.horizontal, 14)
+                    .frame(height: 34)
+                    .contentShape(.capsule)
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: .capsule)
+                .glassEffectID("capsule", in: glass)
+                .accessibilityLabel("\(title(selection)), Feeds anzeigen")
+            } else {
+                SegmentCapsule(options: options, selection: $selection, title: title, glassNamespace: glass)
+            }
+        }
+        #endif
+    }
+}
+
+#if !os(visionOS)
+private struct GlassID: ViewModifier {
+    let namespace: Namespace.ID?
+
+    func body(content: Content) -> some View {
+        if let namespace {
+            content.glassEffectID("capsule", in: namespace)
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 extension View {
     /// Section heading with a trailing hairline, like "Hochlads ───".

@@ -142,6 +142,19 @@ final class AppState {
 
     var defaultQuery: FeedQuery { query(for: defaultSource) ?? .top }
 
+    /// Custom feeds bound to filters that are all off are left out.
+    func visibleCustomFeeds(for flags: ContentFlags) -> [CustomFeed] {
+        customFeeds.filter { $0.isVisible(with: flags) }
+    }
+
+    /// The default feed, or its stream while the custom default is hidden by the content filter.
+    func defaultSource(for flags: ContentFlags) -> FeedSource {
+        if case .custom(let id) = defaultSource, let feed = customFeed(id), !feed.isVisible(with: flags) {
+            return .stream(feed.stream)
+        }
+        return defaultSource
+    }
+
     /// Stream that tag feeds and searches start in: the default feed's.
     var defaultStream: FeedStream { defaultQuery.stream }
 

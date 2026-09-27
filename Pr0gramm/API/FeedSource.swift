@@ -7,6 +7,15 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     /// Tags as typed in the search, optionally in extended syntax (`! kadse s:1000`).
     var tags: String
     var stream: FeedStream = .top
+    /// Content filters the feed is bound to; empty means always shown.
+    var flags: ContentFlags = []
+
+    /// Shown only while every active filter is one of its own, e.g. an NSFW-bound feed while NSFW
+    /// is the only filter on, but not with SFW on as well.
+    func isVisible(with active: ContentFlags) -> Bool {
+        let switchable: ContentFlags = [.sfw, .nsfw, .nsfl, .pol]
+        return flags.isEmpty || flags.isSuperset(of: active.intersection(switchable))
+    }
 
     var query: FeedQuery {
         let tags = tags.trimmingCharacters(in: .whitespaces)
@@ -29,6 +38,20 @@ struct CustomFeed: Codable, Hashable, Identifiable {
         self.name = name
         self.tags = tags
         self.stream = stream
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, tags, stream, flags
+    }
+
+    /// Feeds saved before `flags` existed decode as always shown.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        tags = try container.decode(String.self, forKey: .tags)
+        stream = try container.decode(FeedStream.self, forKey: .stream)
+        flags = try container.decodeIfPresent(ContentFlags.self, forKey: .flags) ?? []
     }
 }
 

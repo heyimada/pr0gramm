@@ -3,6 +3,7 @@ import SwiftUI
 /// Start tab: today's top post as a hero, a "Top 10 heute" rail, then everything else from the
 /// default feed (beliebt unless changed in the settings).
 struct HomeScreen: View {
+    @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @State private var cache = FeedCache()
 
@@ -15,7 +16,7 @@ struct HomeScreen: View {
     }
 
     private var sectionTitle: String {
-        switch app.defaultQuery.stream {
+        switch (app.query(for: source) ?? .top).stream {
         case .top: "Frisch promoted"
         case .new: "Frisch hochgeladen"
         case .junk: "Frisch im Müll"
@@ -23,8 +24,10 @@ struct HomeScreen: View {
         }
     }
 
+    private var source: FeedSource { app.defaultSource(for: session.flags) }
+
     var body: some View {
-        let query = app.defaultQuery
+        let query = app.query(for: source) ?? .top
         let feed = cache.model(for: query)
         let top = Array(ranked(feed).prefix(11))
         let topModel = FeedModel(items: top, query: query)
@@ -35,7 +38,7 @@ struct HomeScreen: View {
                     if top.count > 1 {
                         TopRail(items: Array(top.dropFirst()), model: topModel)
                     }
-                    SectionTitle(kicker: app.title(for: app.defaultSource), title: sectionTitle)
+                    SectionTitle(kicker: app.title(for: source), title: sectionTitle)
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 12)

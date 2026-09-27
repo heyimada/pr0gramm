@@ -1,23 +1,26 @@
 import SwiftUI
 
-/// What the Reels tab shows: stream, media type and tags to include or exclude. Persisted.
+/// What the Reels tab narrows every feed to: media type and tags to include or exclude. Persisted.
 struct ReelsFilter: Codable, Equatable {
-    var stream: FeedStream = .top
     var onlyVideos = true
     var includedTags: [String] = []
     var excludedTags: [String] = []
 
     var hasTagFilter: Bool { !includedTags.isEmpty || !excludedTags.isEmpty }
 
-    /// Extended search query, e.g. `! video kadse "steile frise" -"süßvieh"`.
-    var query: FeedQuery {
+    /// `feed` narrowed down as an extended search, e.g. `! video kadse "steile frise" -"süßvieh"`.
+    func query(for feed: FeedQuery) -> FeedQuery {
         func quoted(_ tag: String) -> String {
             tag.contains(where: \.isWhitespace) ? "\"\(tag)\"" : tag
         }
         var terms = onlyVideos ? ["video"] : []
+        if var tags = feed.tags?.trimmingCharacters(in: .whitespaces), !tags.isEmpty {
+            if tags.hasPrefix("!") { tags.removeFirst() }
+            terms.append(tags.trimmingCharacters(in: .whitespaces))
+        }
         terms += includedTags.map(quoted)
         terms += excludedTags.map { "-\"\($0)\"" }
-        return FeedQuery(stream: stream, tags: terms.isEmpty ? nil : "! " + terms.joined(separator: " "))
+        return FeedQuery(stream: feed.stream, tags: terms.isEmpty ? nil : "! " + terms.joined(separator: " "))
     }
 
     mutating func include(_ tag: String) {
