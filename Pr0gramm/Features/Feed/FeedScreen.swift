@@ -19,10 +19,16 @@ struct FeedScreen: View {
     }
 }
 
-/// Grid plus, for tag searches, a glass stream switcher on top.
+/// Grid plus, for tag searches, a glass stream switcher and a button to save the search as a feed.
 struct FeedScreenContent: View {
+    @Environment(AppState.self) private var app
     let model: FeedModel
     let onSelectStream: (FeedStream) -> Void
+    @State private var newFeed: CustomFeed?
+
+    private var savedFeed: CustomFeed? {
+        app.customFeeds.first { $0.query == model.query }
+    }
 
     var body: some View {
         FeedGrid(model: model) {
@@ -32,16 +38,41 @@ struct FeedScreenContent: View {
                         .font(.title3.weight(.semibold))
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
-                    SegmentCapsule(
-                        options: FeedStream.searchable,
-                        selection: Binding(get: { model.query.stream }, set: { onSelectStream($0) }),
-                        title: \.title
-                    )
+                    HStack(spacing: 10) {
+                        SegmentCapsule(
+                            options: FeedStream.searchable,
+                            selection: Binding(get: { model.query.stream }, set: { onSelectStream($0) }),
+                            title: \.title
+                        )
+                        saveButton
+                    }
                 }
                 .padding(.vertical, 12)
                 .frame(maxWidth: .infinity)
             }
         }
+        .sheet(item: $newFeed) { feed in
+            CustomFeedEditor(feed: feed, isNew: true)
+        }
+    }
+
+    private var saveButton: some View {
+        Button {
+            if let savedFeed {
+                withAnimation { app.customFeeds.removeAll { $0.id == savedFeed.id } }
+            } else {
+                newFeed = CustomFeed(query: model.query)
+            }
+        } label: {
+            Image(systemName: savedFeed == nil ? "bookmark" : "bookmark.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(savedFeed == nil ? Color.pr0Text : Color.pr0Orange)
+                .frame(width: 40, height: 40)
+                .contentShape(.circle)
+                .glassCircle()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(savedFeed == nil ? "Als Feed speichern" : "Gespeicherten Feed entfernen")
     }
 }
 
@@ -121,37 +152,47 @@ extension FeedGrid where Header == EmptyView {
     }
 }
 
-/// Feed tab: the stream grid with a floating glass capsule for beliebt · neu · müll (· abos).
+/// Feed tab: the stream grid with a floating glass capsule for beliebt · neu · müll (· abos)
+/// and the user's own feeds. Opens on the default feed from the settings.
 struct StreamsScreen: View {
     @Environment(Session.self) private var session
-    @State private var stream: FeedStream = .top
+    @Environment(AppState.self) private var app
+    /// `nil` until the user picks something, so the tab follows changes to the default feed.
+    @State private var selection: FeedSource?
     @State private var cache = FeedCache()
 
-    private var streams: [FeedStream] {
-        FeedStream.searchable + (session.isLoggedIn ? [.subscribed] : [])
+    private var sources: [FeedSource] {
+        FeedStream.searchable.map(FeedSource.stream)
+            + (session.isLoggedIn ? [.stream(.subscribed)] : [])
+            + app.customFeeds.map { .custom($0.id) }
+    }
+
+    private var current: FeedSource {
+        let source = selection ?? app.defaultSource
+        return sources.contains(source) ? source : .stream(.top)
     }
 
     var body: some View {
-        FeedGrid(model: cache.model(for: stream))
-            .id(stream)
+        let query = app.query(for: current) ?? .top
+        FeedGrid(model: cache.model(for: query))
+            .id(query)
             .safeAreaInset(edge: .top) {
-                SegmentCapsule(options: streams, selection: $stream, title: \.title)
+                SegmentCapsule(options: sources, selection: Binding(get: { current }, set: { selection = $0 }),
+                               title: app.title(for:))
+                    .padding(.horizontal, 16)
                     .padding(.bottom, 8)
-            }
-            .onChange(of: session.isLoggedIn) {
-                if !session.isLoggedIn, stream == .subscribed { stream = .top }
             }
     }
 }
 
-/// One model per stream so switching back keeps loaded items.
+/// One model per query so switching back keeps loaded items.
 final class FeedCache {
-    private var models: [FeedStream: FeedModel] = [:]
+    private var models: [FeedQuery: FeedModel] = [:]
 
-    func model(for stream: FeedStream) -> FeedModel {
-        if let model = models[stream] { return model }
-        let model = FeedModel(query: FeedQuery(stream: stream))
-        models[stream] = model
+    func model(for query: FeedQuery) -> FeedModel {
+        if let model = models[query] { return model }
+        let model = FeedModel(query: query)
+        models[query] = model
         return model
     }
 }

@@ -80,8 +80,26 @@ final class AppState {
         didSet { UserDefaults.standard.set(tabOrder.map(\.rawValue), forKey: Self.tabOrderKey) }
     }
 
+    /// Feed that Start, the Feed tab and Reels open with. Configured under Einstellungen › Feeds.
+    var defaultSource: FeedSource {
+        didSet {
+            UserDefaults.standard.set(try? JSONEncoder().encode(defaultSource), forKey: Self.defaultSourceKey)
+            search.stream = defaultStream
+        }
+    }
+
+    /// Saved tag searches, in the order they appear in the Feed tab.
+    var customFeeds: [CustomFeed] {
+        didSet {
+            UserDefaults.standard.set(try? JSONEncoder().encode(customFeeds), forKey: Self.customFeedsKey)
+            if case .custom(let id) = defaultSource, customFeed(id) == nil { defaultSource = .stream(.top) }
+        }
+    }
+
     /// Versioned so a changed default reaches everyone once; older configurations are ignored.
     private static let tabOrderKey = "tabOrder.v2"
+    private static let defaultSourceKey = "defaultFeed"
+    private static let customFeedsKey = "customFeeds"
 
     let routers: [AppTab: Router] = Dictionary(uniqueKeysWithValues: AppTab.allCases.map { ($0, Router()) })
 
@@ -92,7 +110,40 @@ final class AppState {
         let order = stored.isEmpty ? AppTab.defaultOrder : stored
         tab = order.first ?? .top
         tabOrder = order
+
+        let defaults = UserDefaults.standard
+        let feeds = defaults.data(forKey: Self.customFeedsKey)
+            .flatMap { try? JSONDecoder().decode([CustomFeed].self, from: $0) } ?? []
+        customFeeds = feeds
+        let source = defaults.data(forKey: Self.defaultSourceKey)
+            .flatMap { try? JSONDecoder().decode(FeedSource.self, from: $0) } ?? .stream(.top)
+        defaultSource = source
+        search.stream = defaultStream
     }
+
+    func customFeed(_ id: CustomFeed.ID) -> CustomFeed? {
+        customFeeds.first { $0.id == id }
+    }
+
+    /// `nil` for a custom feed that has since been deleted.
+    func query(for source: FeedSource) -> FeedQuery? {
+        switch source {
+        case .stream(let stream): FeedQuery(stream: stream)
+        case .custom(let id): customFeed(id)?.query
+        }
+    }
+
+    func title(for source: FeedSource) -> String {
+        switch source {
+        case .stream(let stream): stream.title
+        case .custom(let id): customFeed(id)?.name ?? ""
+        }
+    }
+
+    var defaultQuery: FeedQuery { query(for: defaultSource) ?? .top }
+
+    /// Stream that tag feeds and searches start in: the default feed's.
+    var defaultStream: FeedStream { defaultQuery.stream }
 
     /// "Abos" needs an account, so it's left out while logged out.
     func visibleTabs(isLoggedIn: Bool) -> [AppTab] {

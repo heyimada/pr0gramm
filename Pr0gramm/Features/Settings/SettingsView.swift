@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(Session.self) private var session
     @Environment(DownloadStore.self) private var downloads
+    @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
     @State private var confirmsDeleteAll = false
 
@@ -15,6 +16,15 @@ struct SettingsView: View {
                         NavigationSettingsView()
                     } label: {
                         Label("Navigation", systemImage: "dock.rectangle")
+                    }
+                    NavigationLink {
+                        FeedSettingsView()
+                    } label: {
+                        LabeledContent {
+                            Text(app.title(for: app.defaultSource))
+                        } label: {
+                            Label("Feeds", systemImage: "square.stack")
+                        }
                     }
                 }
 

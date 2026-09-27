@@ -38,7 +38,7 @@ private struct TagPill: View {
 
     var body: some View {
         let vote = session.vote(for: .tag, id: tag.id)
-        NavigationLink(value: Route.feed(FeedQuery(stream: .top, tags: tag.tag))) {
+        NavigationLink(value: Route.feed(FeedQuery(stream: app.defaultStream, tags: tag.tag))) {
             Text(tag.tag)
                 .font(.subheadline)
                 .foregroundStyle(Color.pr0Text)

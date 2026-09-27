@@ -1,23 +1,33 @@
 import SwiftUI
 
-/// Start tab: today's top post as a hero, a "Top 10 heute" rail, then everything else from beliebt.
+/// Start tab: today's top post as a hero, a "Top 10 heute" rail, then everything else from the
+/// default feed (beliebt unless changed in the settings).
 struct HomeScreen: View {
-    @Environment(Session.self) private var session
-    @State private var feed = FeedModel(query: FeedQuery(stream: .top))
-    @Namespace private var namespace
+    @Environment(AppState.self) private var app
+    @State private var cache = FeedCache()
 
     /// Posts from the last 24 hours with visible scores, best first. Falls back to all loaded posts.
-    private var ranked: [FeedItem] {
+    private func ranked(_ feed: FeedModel) -> [FeedItem] {
         let cutoff = Date(timeIntervalSinceNow: -86_400)
         let visible = feed.items.filter { !$0.createdAt.isScoreHidden }
         let today = visible.filter { $0.createdAt > cutoff }
         return (today.count >= 5 ? today : visible).sorted { $0.score > $1.score }
     }
 
+    private var sectionTitle: String {
+        switch app.defaultQuery.stream {
+        case .top: "Frisch promoted"
+        case .new: "Frisch hochgeladen"
+        case .junk: "Frisch im Müll"
+        case .subscribed: "Von deinen Abos"
+        }
+    }
+
     var body: some View {
-        let ranked = ranked
-        let top = Array(ranked.prefix(11))
-        let topModel = FeedModel(items: top, query: FeedQuery(stream: .top))
+        let query = app.defaultQuery
+        let feed = cache.model(for: query)
+        let top = Array(ranked(feed).prefix(11))
+        let topModel = FeedModel(items: top, query: query)
         FeedGrid(model: feed, showsBackground: false) {
             if let hero = top.first {
                 VStack(alignment: .leading, spacing: 28) {
@@ -25,12 +35,13 @@ struct HomeScreen: View {
                     if top.count > 1 {
                         TopRail(items: Array(top.dropFirst()), model: topModel)
                     }
-                    SectionTitle(kicker: "Beliebt", title: "Frisch promoted")
+                    SectionTitle(kicker: app.title(for: app.defaultSource), title: sectionTitle)
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 12)
             }
         }
+        .id(query)
         .background { AmbientBackdrop(url: top.first?.thumbnailURL) }
     }
 }

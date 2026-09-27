@@ -137,6 +137,25 @@ struct SegmentCapsule<Value: Hashable>: View {
     @Namespace private var namespace
 
     var body: some View {
+        // Scrolls sideways once saved feeds no longer fit next to the streams.
+        ViewThatFits(in: .horizontal) {
+            segments
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal) { segments }
+                    .scrollIndicators(.hidden)
+                    .clipShape(.capsule)
+                    .onAppear { proxy.scrollTo(selection, anchor: .center) }
+                    .onChange(of: selection) { withAnimation { proxy.scrollTo(selection, anchor: .center) } }
+            }
+        }
+        #if os(visionOS)
+        .glassBackgroundEffect(in: .capsule)
+        #else
+        .glassEffect(.regular, in: .capsule)
+        #endif
+    }
+
+    private var segments: some View {
         HStack(spacing: 0) {
             ForEach(options, id: \.self) { option in
                 let isOn = option == selection
@@ -146,6 +165,7 @@ struct SegmentCapsule<Value: Hashable>: View {
                     Text(title(option))
                         .font(.subheadline.weight(isOn ? .semibold : .regular))
                         .foregroundStyle(isOn ? Color.pr0Text : Color.pr0Secondary)
+                        .lineLimit(1)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background {
@@ -158,14 +178,11 @@ struct SegmentCapsule<Value: Hashable>: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(isOn ? .isSelected : [])
+                .id(option)
             }
         }
         .padding(4)
-        #if os(visionOS)
-        .glassBackgroundEffect(in: .capsule)
-        #else
-        .glassEffect(.regular, in: .capsule)
-        #endif
+        .fixedSize()
     }
 }
 

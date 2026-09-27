@@ -3,12 +3,21 @@ import SwiftUI
 /// Full-screen vertical feed, one post per page, TikTok-style.
 struct ReelsScreen: View {
     @Environment(Session.self) private var session
-    @State private var filter = ReelsFilter.load()
-    @State private var model = FeedModel(query: ReelsFilter.load().query)
+    @Environment(AppState.self) private var app
+    @State private var filter: ReelsFilter
+    @State private var model: FeedModel
     @State private var currentID: Int?
     @State private var pool = ReelPlayerPool()
     @State private var insets = EdgeInsets()
     @State private var showsFilter = false
+
+    /// Tags come from the saved filter; the stream starts at the default feed's.
+    init(stream: FeedStream) {
+        var filter = ReelsFilter.load()
+        filter.stream = stream
+        _filter = State(initialValue: filter)
+        _model = State(initialValue: FeedModel(query: filter.query))
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -61,6 +70,7 @@ struct ReelsScreen: View {
         }
         .onChange(of: currentID) { pool.focus(on: currentID, in: model.items) }
         .onChange(of: filter) { filter.save() }
+        .onChange(of: app.defaultStream) { filter.stream = app.defaultStream }
         .sheet(isPresented: $showsFilter) { ReelsFilterSheet(filter: $filter) }
         .onAppear { pool.resume() }
         .onDisappear { pool.pauseAll() }
@@ -209,7 +219,7 @@ private struct ReelPage: View {
             if let tags = info?.tags.sorted(by: { $0.confidence > $1.confidence }).prefix(4), !tags.isEmpty {
                 FlowLayout(spacing: 10) {
                     ForEach(Array(tags)) { tag in
-                        NavigationLink(value: Route.feed(FeedQuery(stream: .top, tags: tag.tag))) {
+                        NavigationLink(value: Route.feed(FeedQuery(stream: app.defaultStream, tags: tag.tag))) {
                             Text("#\(tag.tag)").font(.subheadline.weight(.semibold)).lineLimit(1)
                         }
                         .buttonStyle(.plain)

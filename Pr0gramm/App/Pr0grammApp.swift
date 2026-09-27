@@ -91,7 +91,7 @@ private struct TabStack: View {
                 case .downloads: DownloadsScreen()
                 case .home: HomeScreen()
                 case .feed: StreamsScreen()
-                case .reels: ReelsScreen()
+                case .reels: ReelsScreen(stream: app.defaultStream)
                 case .search: SearchScreen()
                 }
             }
