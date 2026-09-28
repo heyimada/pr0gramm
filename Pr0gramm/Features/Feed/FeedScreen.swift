@@ -27,7 +27,7 @@ struct FeedScreenContent: View {
     @State private var newFeed: CustomFeed?
 
     private var savedFeed: CustomFeed? {
-        app.customFeeds.first { $0.query == model.query }
+        app.accessibleCustomFeeds.first { $0.query == model.query }
     }
 
     var body: some View {
@@ -169,9 +169,7 @@ struct StreamsScreen: View {
     @State private var switcherHeight: CGFloat = 56
 
     private var sources: [FeedSource] {
-        FeedStream.searchable.map(FeedSource.stream)
-            + (session.isLoggedIn ? [.stream(.subscribed)] : [])
-            + app.visibleCustomFeeds(for: session.flags).map { .custom($0.id) }
+        app.feedSources(for: session.flags, includesSubscriptions: session.isLoggedIn)
     }
 
     private var current: FeedSource {

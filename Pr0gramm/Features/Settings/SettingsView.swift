@@ -21,7 +21,7 @@ struct SettingsView: View {
                         FeedSettingsView()
                     } label: {
                         LabeledContent {
-                            Text(app.title(for: app.defaultSource))
+                            Text(app.title(for: app.defaultSource(for: session.flags)))
                         } label: {
                             Label("Feeds", systemImage: "square.stack")
                         }
@@ -33,6 +33,10 @@ struct SettingsView: View {
                     flagToggle("NSFW", "Nackte Haut, Pornos und leicht offensiver Kram", .nsfw)
                     flagToggle("NSFL", "Alles. Gewalt, ekliger Scheiß", .nsfl)
                     flagToggle("POL", "Politik, Wirtschaft, Kriminalität, Konflikte", .pol)
+                    Toggle(isOn: $session.resetsFlagsOnLaunch) {
+                        Text("Beim Start auf SFW zurücksetzen")
+                        Text("Nach jedem Neustart der App ist nur SFW an")
+                    }
                 } header: {
                     Text("Filter")
                 } footer: {

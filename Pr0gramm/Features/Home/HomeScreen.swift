@@ -1,11 +1,13 @@
 import SwiftUI
 
-/// Start tab: today's top post as a hero, a "Top 10 heute" rail, then everything else from the
-/// default feed (beliebt unless changed in the settings).
+/// Start tab: a feed switcher, the feed's top post of the day as a hero, a "Top 10 heute" rail,
+/// then the rest of the feed. Opens on the default feed (beliebt unless changed in the settings).
 struct HomeScreen: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @State private var cache = FeedCache()
+    /// `nil` until the user picks a feed, so Start follows changes to the default feed.
+    @State private var selection: FeedSource?
 
     /// Posts from the last 24 hours with visible scores, best first. Falls back to all loaded posts.
     private func ranked(_ feed: FeedModel) -> [FeedItem] {
@@ -15,16 +17,29 @@ struct HomeScreen: View {
         return (today.count >= 5 ? today : visible).sorted { $0.score > $1.score }
     }
 
+    private var sources: [FeedSource] {
+        app.feedSources(for: session.flags, includesSubscriptions: session.isLoggedIn)
+    }
+
+    private var source: FeedSource {
+        let source = selection ?? app.defaultSource(for: session.flags)
+        return sources.contains(source) ? source : .stream(.top)
+    }
+
     private var sectionTitle: String {
         switch (app.query(for: source) ?? .top).stream {
-        case .top: "Frisch promoted"
+        case .top: "Frisch beliebt"
         case .new: "Frisch hochgeladen"
-        case .junk: "Frisch im Müll"
+        case .junk: "Frischer Müll"
         case .subscribed: "Von deinen Abos"
         }
     }
 
-    private var source: FeedSource { app.defaultSource(for: session.flags) }
+    /// Custom feeds name themselves above the heading; the streams' names are in it already.
+    private var sectionKicker: String {
+        if case .custom = source { return app.title(for: source) }
+        return "Alle Posts"
+    }
 
     var body: some View {
         let query = app.query(for: source) ?? .top
@@ -32,17 +47,21 @@ struct HomeScreen: View {
         let top = Array(ranked(feed).prefix(11))
         let topModel = FeedModel(items: top, query: query)
         FeedGrid(model: feed, showsBackground: false) {
-            if let hero = top.first {
-                VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 28) {
+                SegmentCapsule(options: sources, selection: Binding(get: { source }, set: { selection = $0 }),
+                               title: app.title(for:))
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 16)
+                if let hero = top.first {
                     HeroCard(item: hero, route: .pager(PagerRoute(model: topModel, itemID: hero.id, transitionNamespace: nil)))
                     if top.count > 1 {
                         TopRail(items: Array(top.dropFirst()), model: topModel)
                     }
-                    SectionTitle(kicker: app.title(for: source), title: sectionTitle)
+                    SectionTitle(kicker: sectionKicker, title: sectionTitle)
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 12)
             }
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
         .id(query)
         .background { AmbientBackdrop(url: top.first?.thumbnailURL) }

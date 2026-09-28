@@ -14,6 +14,11 @@ final class Session {
         didSet { defaults.set(selectedFlags.rawValue, forKey: Keys.flags) }
     }
 
+    /// Starts every launch with only SFW, whatever was selected before.
+    var resetsFlagsOnLaunch: Bool {
+        didSet { defaults.set(resetsFlagsOnLaunch, forKey: Keys.resetsFlags) }
+    }
+
     var autoplayVideos: Bool {
         didSet { defaults.set(autoplayVideos, forKey: Keys.autoplay) }
     }
@@ -36,7 +41,11 @@ final class Session {
     init(api: APIClient = .shared, defaults: UserDefaults = .standard) {
         self.api = api
         self.defaults = defaults
-        selectedFlags = ContentFlags(rawValue: defaults.object(forKey: Keys.flags) as? Int ?? ContentFlags.sfw.rawValue)
+        let resetsFlags = defaults.bool(forKey: Keys.resetsFlags)
+        resetsFlagsOnLaunch = resetsFlags
+        selectedFlags = resetsFlags
+            ? .sfw
+            : ContentFlags(rawValue: defaults.object(forKey: Keys.flags) as? Int ?? ContentFlags.sfw.rawValue)
         autoplayVideos = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
         startMuted = defaults.object(forKey: Keys.muted) as? Bool ?? true
         syncOffset = defaults.integer(forKey: Keys.syncOffset)
@@ -189,6 +198,7 @@ final class Session {
 
     private enum Keys {
         static let flags = "contentFlags"
+        static let resetsFlags = "resetsFlagsOnLaunch"
         static let autoplay = "autoplayVideos"
         static let muted = "startMuted"
         static let votes = "votes"

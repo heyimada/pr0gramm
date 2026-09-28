@@ -57,6 +57,24 @@ Pass a device name or identifier if more than one device is connected. Keep the 
 unlocked and on the same Wi-Fi. Logs, archives and IPAs land in `build/`, which git ignores. With a
 free Apple developer account the app stops opening after 7 days; run the script again to reinstall.
 
+## TestFlight
+
+Uploading needs a paid Apple Developer Program membership, and the app record has to exist in
+App Store Connect first (Apps › + › New App, with iOS and visionOS selected and your bundle ID).
+Then:
+
+```bash
+scripts/testflight.sh --dry-run    # print the commands
+scripts/testflight.sh              # archive and upload iOS and visionOS
+scripts/testflight.sh ios          # only one platform
+```
+
+Each run uses a new build number (`yyyymmdd.HHMM`), so you don't have to bump anything by hand.
+Bump `MARKETING_VERSION` in `project.yml` for a new version.
+
+For iPhone and iPad users in the EU, Japan and Brazil, the app can also be distributed through
+AltStore PAL; see [docs/ALTSTORE.md](docs/ALTSTORE.md).
+
 ## Project layout
 
 ```
@@ -65,7 +83,7 @@ Pr0gramm/
   App/        app entry point, tabs, navigation
   Features/   one folder per screen (Feed, Item, Reels, Search, Profile, ...)
   Shared/     theme and reusable views
-scripts/      device install scripts and the icon generator
+scripts/      device install, TestFlight upload and icon generator
 ```
 
 ## License

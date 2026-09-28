@@ -9,6 +9,8 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     var stream: FeedStream = .top
     /// Content filters the feed is bound to; empty means always shown.
     var flags: ContentFlags = []
+    /// Hidden everywhere until unlocked with Face ID, see `AppState.unlockProtectedFeeds()`.
+    var isProtected = false
 
     /// Shown only while every active filter is one of its own, e.g. an NSFW-bound feed while NSFW
     /// is the only filter on, but not with SFW on as well.
@@ -41,10 +43,10 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, tags, stream, flags
+        case id, name, tags, stream, flags, isProtected
     }
 
-    /// Feeds saved before `flags` existed decode as always shown.
+    /// Feeds saved before `flags` and `isProtected` existed decode as always shown.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
@@ -52,6 +54,7 @@ struct CustomFeed: Codable, Hashable, Identifiable {
         tags = try container.decode(String.self, forKey: .tags)
         stream = try container.decode(FeedStream.self, forKey: .stream)
         flags = try container.decodeIfPresent(ContentFlags.self, forKey: .flags) ?? []
+        isProtected = try container.decodeIfPresent(Bool.self, forKey: .isProtected) ?? false
     }
 }
 

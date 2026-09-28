@@ -13,7 +13,7 @@ struct ReelsScreen: View {
     @State private var showsFilter = false
 
     private var sources: [FeedSource] {
-        FeedStream.searchable.map(FeedSource.stream) + app.visibleCustomFeeds(for: session.flags).map { .custom($0.id) }
+        app.feedSources(for: session.flags, includesSubscriptions: false)
     }
 
     private var current: FeedSource {

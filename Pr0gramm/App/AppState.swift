@@ -1,3 +1,4 @@
+import LocalAuthentication
 import Observation
 import SwiftUI
 
@@ -96,6 +97,10 @@ final class AppState {
         }
     }
 
+    /// Whether protected custom feeds are shown. Never stored: every launch starts locked, and the
+    /// app locks again whenever it goes to the background.
+    private(set) var protectedFeedsUnlocked = false
+
     /// Versioned so a changed default reaches everyone once; older configurations are ignored.
     private static let tabOrderKey = "tabOrder.v2"
     private static let defaultSourceKey = "defaultFeed"
@@ -142,17 +147,50 @@ final class AppState {
 
     var defaultQuery: FeedQuery { query(for: defaultSource) ?? .top }
 
-    /// Custom feeds bound to filters that are all off are left out.
-    func visibleCustomFeeds(for flags: ContentFlags) -> [CustomFeed] {
-        customFeeds.filter { $0.isVisible(with: flags) }
+    /// The switcher's entries: beliebt · neu · müll, abos if wanted, then the visible custom feeds.
+    func feedSources(for flags: ContentFlags, includesSubscriptions: Bool) -> [FeedSource] {
+        FeedStream.searchable.map(FeedSource.stream)
+            + (includesSubscriptions ? [.stream(.subscribed)] : [])
+            + visibleCustomFeeds(for: flags).map { .custom($0.id) }
     }
 
-    /// The default feed, or its stream while the custom default is hidden by the content filter.
+    /// Custom feeds bound to filters that are all off, and locked protected feeds, are left out.
+    func visibleCustomFeeds(for flags: ContentFlags) -> [CustomFeed] {
+        customFeeds.filter { $0.isVisible(with: flags) && isAccessible($0) }
+    }
+
+    /// The default feed, or its stream while the custom default is hidden by the content filter
+    /// or locked.
     func defaultSource(for flags: ContentFlags) -> FeedSource {
-        if case .custom(let id) = defaultSource, let feed = customFeed(id), !feed.isVisible(with: flags) {
+        if case .custom(let id) = defaultSource, let feed = customFeed(id),
+           !feed.isVisible(with: flags) || !isAccessible(feed) {
             return .stream(feed.stream)
         }
         return defaultSource
+    }
+
+    // MARK: Protected feeds
+
+    var hasProtectedFeeds: Bool { customFeeds.contains(where: \.isProtected) }
+
+    func isAccessible(_ feed: CustomFeed) -> Bool {
+        !feed.isProtected || protectedFeedsUnlocked
+    }
+
+    /// Custom feeds that may be shown right now, ignoring the content filter; used for managing them.
+    var accessibleCustomFeeds: [CustomFeed] { customFeeds.filter(isAccessible) }
+
+    /// Asks for Face ID (or the device passcode) before showing protected feeds.
+    func unlockProtectedFeeds() async {
+        let context = LAContext()
+        let unlocked = (try? await context.evaluatePolicy(.deviceOwnerAuthentication,
+                                                          localizedReason: "Geschützte Feeds anzeigen")) ?? false
+        withAnimation { protectedFeedsUnlocked = unlocked }
+    }
+
+    func lockProtectedFeeds() {
+        guard protectedFeedsUnlocked else { return }
+        withAnimation { protectedFeedsUnlocked = false }
     }
 
     /// Stream that tag feeds and searches start in: the default feed's.

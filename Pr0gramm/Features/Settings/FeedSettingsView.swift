@@ -7,7 +7,20 @@ struct FeedSettingsView: View {
     @State private var addsFeed = false
 
     private var sources: [FeedSource] {
-        FeedStream.searchable.map(FeedSource.stream) + app.customFeeds.map { .custom($0.id) }
+        FeedStream.searchable.map(FeedSource.stream) + app.accessibleCustomFeeds.map { .custom($0.id) }
+    }
+
+    /// Moves within the shown feeds while locked protected feeds keep their places.
+    private func move(from offsets: IndexSet, to offset: Int) {
+        var shown = app.accessibleCustomFeeds
+        shown.move(fromOffsets: offsets, toOffset: offset)
+        var reordered = shown.makeIterator()
+        app.customFeeds = app.customFeeds.map { app.isAccessible($0) ? reordered.next()! : $0 }
+    }
+
+    private func delete(at offsets: IndexSet) {
+        let ids = Set(offsets.map { app.accessibleCustomFeeds[$0].id })
+        app.customFeeds.removeAll { ids.contains($0.id) }
     }
 
     var body: some View {
@@ -28,10 +41,15 @@ struct FeedSettingsView: View {
             }
 
             Section {
-                ForEach(app.customFeeds) { feed in
+                ForEach(app.accessibleCustomFeeds) { feed in
                     Button { editedFeed = feed } label: {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(feed.name).foregroundStyle(Color.pr0Text)
+                            HStack(spacing: 6) {
+                                Text(feed.name).foregroundStyle(Color.pr0Text)
+                                if feed.isProtected {
+                                    Image(systemName: "lock.fill").font(.caption).foregroundStyle(Color.pr0Secondary)
+                                }
+                            }
                             Text(([feed.tags, feed.stream.title] + ContentFlags.filterTitles(in: feed.flags)).joined(separator: " · "))
                                 .font(.caption)
                                 .foregroundStyle(Color.pr0Secondary)
@@ -39,10 +57,19 @@ struct FeedSettingsView: View {
                         }
                     }
                 }
-                .onMove { app.customFeeds.move(fromOffsets: $0, toOffset: $1) }
-                .onDelete { app.customFeeds.remove(atOffsets: $0) }
+                .onMove(perform: move)
+                .onDelete(perform: delete)
 
                 Button("Feed hinzufügen", systemImage: "plus") { addsFeed = true }
+                if app.hasProtectedFeeds {
+                    if app.protectedFeedsUnlocked {
+                        Button("Geschützte Feeds sperren", systemImage: "lock") { app.lockProtectedFeeds() }
+                    } else {
+                        Button("Geschützte Feeds entsperren", systemImage: "lock.open") {
+                            Task { await app.unlockProtectedFeeds() }
+                        }
+                    }
+                }
             } header: {
                 Text("Eigene Feeds")
             } footer: {
@@ -56,7 +83,7 @@ struct FeedSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
-            if !app.customFeeds.isEmpty {
+            if !app.accessibleCustomFeeds.isEmpty {
                 EditButton()
             }
         }
@@ -130,6 +157,12 @@ struct CustomFeedEditor: View {
                     Text("Nur anzeigen bei")
                 } footer: {
                     Text("Ohne Auswahl ist der Feed immer da. Sonst erscheint er nur, wenn ausschließlich ausgewählte Filter an sind: Ein NSFW-Feed verschwindet also, sobald auch SFW an ist.")
+                }
+
+                Section {
+                    Toggle("Mit Face ID schützen", isOn: $feed.isProtected)
+                } footer: {
+                    Text("Geschützte Feeds bleiben überall ausgeblendet, bis du sie im Filter-Menü mit Face ID entsperrst. Sobald du die App verlässt, sind sie wieder gesperrt.")
                 }
 
                 Section {

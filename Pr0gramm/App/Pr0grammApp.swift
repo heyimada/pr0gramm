@@ -46,6 +46,7 @@ struct Pr0grammApp: App {
 struct RootView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         @Bindable var app = app
@@ -75,6 +76,10 @@ struct RootView: View {
         .sheet(isPresented: $app.showsLogin) { LoginView() }
         .sheet(isPresented: $app.showsSettings) { SettingsView() }
         .task { await session.sync() }
+        .onChange(of: scenePhase) {
+            // Protected feeds need Face ID again after leaving the app.
+            if scenePhase == .background { app.lockProtectedFeeds() }
+        }
     }
 }
 

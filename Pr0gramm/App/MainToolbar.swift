@@ -44,6 +44,17 @@ struct FilterMenu: View {
                     Button("Anmelden", systemImage: "person.crop.circle") { app.showsLogin = true }
                 }
             }
+            if app.hasProtectedFeeds {
+                Section {
+                    if app.protectedFeedsUnlocked {
+                        Button("Geschützte Feeds sperren", systemImage: "lock") { app.lockProtectedFeeds() }
+                    } else {
+                        Button("Geschützte Feeds entsperren", systemImage: "lock.open") {
+                            Task { await app.unlockProtectedFeeds() }
+                        }
+                    }
+                }
+            }
         } label: {
             Group {
                 if plain {
