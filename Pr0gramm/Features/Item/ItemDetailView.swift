@@ -19,6 +19,10 @@ struct ItemDetailView: View {
                 MediaView(item: item, isActive: isActive, maxHeight: max(pageHeight * 0.75, 200))
                     .overlay { StepArrows(previous: step(-1), next: step(1)) }
 
+                if let sourceURL = item.sourceURL {
+                    SourceBar(url: sourceURL)
+                }
+
                 ItemInfoBar(item: item)
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
@@ -69,6 +73,42 @@ struct ItemDetailView: View {
         } catch {
             infoError = error
         }
+    }
+}
+
+private struct SourceBar: View {
+    let url: URL
+
+    private var domain: String {
+        let host = url.host ?? ""
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+
+    var body: some View {
+        Link(destination: url) {
+            HStack(spacing: 8) {
+                Image(systemName: "link")
+                Text("Soße")
+                    .fontWeight(.medium)
+                Text(domain)
+                    .foregroundStyle(Color.pr0Mention)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.right")
+                    .font(.caption2.weight(.semibold))
+            }
+            .font(.footnote)
+            .foregroundStyle(Color.pr0Secondary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .frame(minHeight: 44)
+            .background(Color.pr0Pill)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Soße: \(domain)")
+        .accessibilityHint("Öffnet die Quelle im Browser")
     }
 }
 

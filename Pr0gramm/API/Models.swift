@@ -70,6 +70,15 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
     }
 
     var fullsizeURL: URL? { fullsize.isEmpty ? nil : MediaHost.full.url(fullsize) }
+
+    var sourceURL: URL? {
+        guard let source,
+              let url = URL(string: source.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "https" || scheme == "http",
+              let host = url.host, !host.isEmpty else { return nil }
+        return url
+    }
 }
 
 struct MediaVariant: Codable, Hashable, Sendable {
