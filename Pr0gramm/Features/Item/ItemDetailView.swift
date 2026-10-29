@@ -1,38 +1,62 @@
 import SwiftUI
 
-/// One post as laid out on pr0.app: media, vote/info bar, tags, comments.
+/// One post as laid out on pr0.app: media, vote/info bar, tags, comments. On wide regular-width
+/// pages (iPhone Duo opened in landscape, iPad) the media gets its own column next to the rest.
 struct ItemDetailView: View {
     @Environment(Session.self) private var session
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let item: FeedItem
     let isActive: Bool
-    let pageHeight: CGFloat
+    let pageSize: CGSize
+    /// Leading and trailing safe-area insets the page spans but must keep its content out of, e.g.
+    /// the vertical bar of an iPhone Duo. Backgrounds still run underneath.
+    var sideInsets = EdgeInsets()
     /// Returns an action moving to the previous (-1) or next (+1) post, if there is one.
     var step: (Int) -> (() -> Void)? = { _ in nil }
 
     @State private var info: ItemInfo?
     @State private var infoError: Error?
     @State private var replyTarget: ReplyTarget?
+    @State private var playback = VideoPlayback()
+
+    private var isSideBySide: Bool {
+        sizeClass == .regular && pageSize.width > pageSize.height
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                MediaView(item: item, isActive: isActive, maxHeight: max(pageHeight * 0.75, 200))
-                    .overlay { StepArrows(previous: step(-1), next: step(1)) }
+        Group {
+            if isSideBySide {
+                HStack(spacing: 0) {
+                    // Sized by the space left rather than by the media, so the page can't outgrow the screen.
+                    // Only very tall images scroll; everything else fits the column below the bars.
+                    GeometryReader { proxy in
+                        ScrollView {
+                            media(maxHeight: max(proxy.size.height - (item.sourceURL == nil ? 0 : SourceBar.height), 0))
+                                .frame(width: proxy.size.width)
+                        }
+                        .defaultScrollAnchor(.center, for: .alignment)
+                    }
+                    .padding(.leading, sideInsets.leading)
+                    .background(Color.black)
 
-                if let sourceURL = item.sourceURL {
-                    SourceBar(url: sourceURL)
+                    ScrollView {
+                        details
+                            .padding(.top, 8)
+                            .padding(.trailing, sideInsets.trailing)
+                    }
+                    .frame(width: min(max(pageSize.width * 0.38, 340), 440) + sideInsets.trailing)
                 }
-
-                ItemInfoBar(item: item)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 20)
-
-                content.padding(.horizontal, 16)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        media(maxHeight: max(pageSize.height * 0.75, 200), insets: sideInsets)
+                        details.padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
+                    }
+                }
             }
-            .padding(.bottom, 40)
         }
         .scrollIndicators(.hidden)
+        .onDisappear { playback.stop() }
         .task { await loadInfo() }
         .sheet(item: $replyTarget) { target in
             CommentComposer(itemId: item.id, parentId: target.parentId,
@@ -40,6 +64,36 @@ struct ItemDetailView: View {
                 apply(comments)
             }
         }
+    }
+
+    /// Media and source link, kept clear of `insets` while their backgrounds fill them.
+    private func media(maxHeight: CGFloat, insets: EdgeInsets = EdgeInsets()) -> some View {
+        VStack(spacing: 0) {
+            MediaView(item: item, isActive: isActive, playback: playback, maxHeight: maxHeight)
+                .overlay { StepArrows(previous: step(-1), next: step(1)) }
+                .padding(.leading, insets.leading)
+                .padding(.trailing, insets.trailing)
+                .background(Color.black)
+
+            if let sourceURL = item.sourceURL {
+                SourceBar(url: sourceURL)
+                    .padding(.leading, insets.leading)
+                    .padding(.trailing, insets.trailing)
+                    .background(Color.pr0Pill)
+            }
+        }
+    }
+
+    private var details: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ItemInfoBar(item: item)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 20)
+
+            content.padding(.horizontal, 16)
+        }
+        .padding(.bottom, 40)
     }
 
     @ViewBuilder
@@ -77,6 +131,7 @@ struct ItemDetailView: View {
 }
 
 private struct SourceBar: View {
+    static let height: CGFloat = 44
     let url: URL
 
     private var domain: String {
@@ -102,7 +157,7 @@ private struct SourceBar: View {
             .foregroundStyle(Color.pr0Secondary)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .frame(minHeight: 44)
+            .frame(minHeight: Self.height)
             .background(Color.pr0Pill)
             .contentShape(.rect)
         }

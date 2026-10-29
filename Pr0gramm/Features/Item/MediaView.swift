@@ -5,6 +5,7 @@ import SwiftUI
 struct MediaView: View {
     let item: FeedItem
     let isActive: Bool
+    let playback: VideoPlayback
     let maxHeight: CGFloat
 
     @State private var showsViewer = false
@@ -23,7 +24,7 @@ struct MediaView: View {
     @ViewBuilder
     private var media: some View {
         if item.isVideo {
-            LoopingVideoView(item: item, isActive: isActive)
+            LoopingVideoView(item: item, isActive: isActive, playback: playback)
         } else {
             RemoteImage(url: item.mediaURL)
                 .onTapGesture { openViewer() }
@@ -76,17 +77,29 @@ final class LoopingPlayer {
     }
 }
 
+/// A post's video player. Kept by the post's page rather than by `LoopingVideoView`, so playback
+/// carries on when the page switches layouts, e.g. when an iPhone Duo is opened or rotated.
+@Observable
+final class VideoPlayback {
+    var looping: LoopingPlayer?
+    var userStarted = false
+
+    func stop() {
+        looping?.player.pause()
+        looping = nil
+        userStarted = false
+    }
+}
+
 struct LoopingVideoView: View {
     @Environment(Session.self) private var session
     let item: FeedItem
     let isActive: Bool
-
-    @State private var looping: LoopingPlayer?
-    @State private var userStarted = false
+    let playback: VideoPlayback
 
     var body: some View {
         ZStack {
-            if let looping {
+            if let looping = playback.looping {
                 VideoPlayer(player: looping.player)
             } else {
                 AsyncImage(url: item.thumbnailURL) { image in
@@ -95,7 +108,7 @@ struct LoopingVideoView: View {
                     Color.black
                 }
                 Button {
-                    userStarted = true
+                    playback.userStarted = true
                     update()
                 } label: {
                     Image(systemName: "play.circle.fill")
@@ -108,23 +121,18 @@ struct LoopingVideoView: View {
             }
         }
         .onChange(of: isActive, initial: true) { update() }
-        .onDisappear {
-            looping?.player.pause()
-            looping = nil
-            userStarted = false
-        }
     }
 
     /// Plays while this page is the visible one; tears the player down when it isn't to save memory.
     private func update() {
-        guard isActive, session.autoplayVideos || userStarted else {
-            looping?.player.pause()
-            if !isActive { looping = nil; userStarted = false }
+        guard isActive, session.autoplayVideos || playback.userStarted else {
+            playback.looping?.player.pause()
+            if !isActive { playback.stop() }
             return
         }
-        if looping == nil {
-            looping = LoopingPlayer(url: item.mediaURL, muted: session.startMuted && !userStarted)
+        if playback.looping == nil {
+            playback.looping = LoopingPlayer(url: item.mediaURL, muted: session.startMuted && !playback.userStarted)
         }
-        looping?.player.play()
+        playback.looping?.player.play()
     }
 }

@@ -106,6 +106,7 @@ private struct AmbientBackdrop: View {
 }
 
 private struct HeroCard: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let item: FeedItem
     let route: Route
     @State private var info: ItemInfo?
@@ -126,7 +127,9 @@ private struct HeroCard: View {
                                startPoint: .top, endPoint: .bottom)
                 details.padding(20)
             }
-            .aspectRatio(4 / 5, contentMode: .fit)
+            // Portrait on phones; wide on regular-width screens like the opened iPhone Duo, so the
+            // rail below still shows.
+            .aspectRatio(sizeClass == .regular ? 2 : 4 / 5, contentMode: .fit)
             .clipShape(.rect(cornerRadius: 28))
             .overlay(RoundedRectangle(cornerRadius: 28).strokeBorder(.white.opacity(0.08)))
             .contentShape(.rect(cornerRadius: 28))

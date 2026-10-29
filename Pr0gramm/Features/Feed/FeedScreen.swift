@@ -182,8 +182,10 @@ struct StreamsScreen: View {
         // the tab bar; margins keep the first and last rows clear of them. A paging scroll view
         // rather than a page-style TabView, whose pages come with insets of their own.
         GeometryReader { outer in
-            let top = outer.safeAreaInsets.top + switcherHeight
-            let bottom = outer.safeAreaInsets.bottom
+            let insets = outer.safeAreaInsets
+            // Leading and trailing too: the closed iPhone Duo keeps its tab bar along the right edge.
+            let margins = EdgeInsets(top: insets.top + switcherHeight, leading: insets.leading,
+                                     bottom: insets.bottom, trailing: insets.trailing)
             GeometryReader { proxy in
                 ScrollView(.horizontal) {
                     // Not lazy, so every feed keeps its scroll position.
@@ -191,10 +193,8 @@ struct StreamsScreen: View {
                         ForEach(sources, id: \.self) { source in
                             let query = app.query(for: source) ?? .top
                             FeedGrid(model: cache.model(for: query), onScroll: collapse.scrolled(to:))
-                                .contentMargins(.top, top, for: .scrollContent)
-                                .contentMargins(.bottom, bottom, for: .scrollContent)
-                                .contentMargins(.top, top, for: .scrollIndicators)
-                                .contentMargins(.bottom, bottom, for: .scrollIndicators)
+                                .contentMargins(.all, margins, for: .scrollContent)
+                                .contentMargins(.all, margins, for: .scrollIndicators)
                                 .id(query)
                                 .frame(width: proxy.size.width, height: proxy.size.height)
                                 .id(source)

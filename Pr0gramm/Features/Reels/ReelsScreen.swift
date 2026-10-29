@@ -272,7 +272,9 @@ private struct ReelPage: View {
                 Spacer(minLength: 0)
                 actions
             }
-            .padding(.horizontal, 16)
+            // Each side on its own: the closed iPhone Duo keeps its tab bar along the right edge.
+            .padding(.leading, insets.leading + 16)
+            .padding(.trailing, insets.trailing + 16)
             .padding(.bottom, insets.bottom + 12)
         }
         .clipped()
