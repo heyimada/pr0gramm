@@ -3,7 +3,13 @@ import SwiftUI
 struct ThumbnailView: View {
     let item: FeedItem
 
-    static func thumbnailColumns(compact: Bool, spacing: CGFloat) -> [GridItem] {
+    #if os(visionOS)
+    static let spacing: CGFloat = 8
+    #else
+    static let spacing: CGFloat = 2
+    #endif
+
+    static func thumbnailColumns(compact: Bool) -> [GridItem] {
         compact
             ? Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3)
             : [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: spacing)]

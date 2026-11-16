@@ -9,8 +9,6 @@ struct ContentFlags: OptionSet, Hashable, Codable, Sendable {
     static let nsfl = ContentFlags(rawValue: 4)
     static let nsfp = ContentFlags(rawValue: 8)
     static let pol = ContentFlags(rawValue: 16)
-
-    static let switchable: ContentFlags = [.sfw, .nsfw, .nsfl, .pol]
 }
 
 struct FeedResponse: Decodable {

@@ -9,17 +9,11 @@ struct FeedGrid<Header: View>: View {
     var onScroll: ((CGFloat) -> Void)?
     @ViewBuilder var header: Header
 
-    #if os(visionOS)
-    private static var spacing: CGFloat { 8 }
-    #else
-    private static var spacing: CGFloat { 2 }
-    #endif
-
     var body: some View {
         ScrollView {
             header
 
-            LazyVGrid(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact, spacing: Self.spacing), spacing: Self.spacing) {
+            LazyVGrid(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact), spacing: ThumbnailView.spacing) {
                 ForEach(model.items) { item in
                     NavigationLink(value: Route.pager(PagerRoute(model: model, itemID: item.id, transitionNamespace: namespace))) {
                         ThumbnailView(item: item)
@@ -35,7 +29,7 @@ struct FeedGrid<Header: View>: View {
                 }
             }
             #if os(visionOS)
-            .padding(Self.spacing)
+            .padding(ThumbnailView.spacing)
             #endif
 
             if model.isLoading {

@@ -12,7 +12,7 @@ struct DownloadsScreen: View {
                                        description: Text("Tippe bei einem Post auf ↓, um ihn offline zu speichern."))
                     .padding(.top, 120)
             } else {
-                LazyVGrid(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact, spacing: 2), spacing: 2) {
+                LazyVGrid(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact), spacing: ThumbnailView.spacing) {
                     ForEach(store.downloads) { download in
                         NavigationLink(value: Route.download(download.id)) {
                             ThumbnailView(item: download.item)

@@ -35,7 +35,7 @@ struct StreamsScreen: View {
         .onChange(of: current) { collapse.reset() }
         .overlay(alignment: .top) {
             CollapsingSegmentCapsule(options: sources, selection: Binding(get: { current }, set: { selection = $0 }),
-                                     title: library.title(for:), isCollapsed: collapse.isCollapsed, onExpand: collapse.expand)
+                                     title: library.title(for:), isCollapsed: collapse.isCollapsed, collapsedHint: "Feeds anzeigen", onExpand: collapse.expand)
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 8)

@@ -162,11 +162,14 @@ struct SegmentCapsule<Value: Hashable>: View {
     }
 }
 
+private let capsuleGlassID = "capsule"
+
 struct CollapsingSegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
     let title: (Value) -> String
     let isCollapsed: Bool
+    let collapsedHint: String
     let onExpand: () -> Void
     @Namespace private var glass
 
@@ -189,8 +192,8 @@ struct CollapsingSegmentCapsule<Value: Hashable>: View {
                 }
                 .buttonStyle(.plain)
                 .glassEffect(.regular.interactive(), in: .capsule)
-                .glassEffectID("capsule", in: glass)
-                .accessibilityLabel("\(title(selection)), Feeds anzeigen")
+                .glassEffectID(capsuleGlassID, in: glass)
+                .accessibilityLabel("\(title(selection)), \(collapsedHint)")
             } else {
                 SegmentCapsule(options: options, selection: $selection, title: title, glassNamespace: glass)
             }
@@ -205,7 +208,7 @@ private struct GlassID: ViewModifier {
 
     func body(content: Content) -> some View {
         if let namespace {
-            content.glassEffectID("capsule", in: namespace)
+            content.glassEffectID(capsuleGlassID, in: namespace)
         } else {
             content
         }
