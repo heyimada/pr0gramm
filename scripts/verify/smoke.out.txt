@@ -1,0 +1,19 @@
+ok    start opens
+ok    feed tab
+ok    post opens
+ok    reels
+ok    reels comment sheet
+ok    tag opens inside the sheet
+ok    reels filter sheet
+ok    settings
+ok    settings feeds
+ok    settings navigation
+ok    login sheet
+ok    fold keeps reel 3 (Profil von stark2g)
+ok    fold keeps the third feed ("müll" [selected])
+FAIL  fold keeps a post past the first ( /  / )
+ok    search results
+ok    feed editor
+ok    saved search shows as saved
+ok    removed again
+1 failed
