@@ -3,20 +3,21 @@ import SwiftUI
 /// Sheet for editing the Reels filter.
 struct ReelsFilterSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var filter: ReelsFilter
+    @Environment(ReelsFilterStore.self) private var store
     @State private var newIncluded = ""
     @State private var newExcluded = ""
 
     var body: some View {
+        @Bindable var store = store
         NavigationStack {
             Form {
                 Section {
-                    Toggle("Nur Videos", isOn: $filter.onlyVideos)
+                    Toggle("Nur Videos", isOn: $store.filter.onlyVideos)
                 }
 
                 Section {
-                    tagList($filter.includedTags, tint: .upvoteGreen)
-                    addField("Tag hinzufügen, z. B. kadse", text: $newIncluded) { filter.include($0) }
+                    tagList($store.filter.includedTags, tint: .upvoteGreen)
+                    addField("Tag hinzufügen, z. B. kadse", text: $newIncluded) { store.filter.include($0) }
                 } header: {
                     Text("Nur mit diesen Tags")
                 } footer: {
@@ -24,15 +25,14 @@ struct ReelsFilterSheet: View {
                 }
 
                 Section("Ausblenden") {
-                    tagList($filter.excludedTags, tint: .pr0Orange)
-                    addField("Tag ausschließen, z. B. süßvieh", text: $newExcluded) { filter.exclude($0) }
+                    tagList($store.filter.excludedTags, tint: .pr0Orange)
+                    addField("Tag ausschließen, z. B. süßvieh", text: $newExcluded) { store.filter.exclude($0) }
                 }
 
-                if filter.hasTagFilter {
+                if store.filter.hasTagFilter {
                     Section {
                         Button("Tag-Filter zurücksetzen", role: .destructive) {
-                            filter.includedTags = []
-                            filter.excludedTags = []
+                            store.filter.clearTags()
                         }
                     }
                 }
@@ -43,8 +43,8 @@ struct ReelsFilterSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig", role: .confirm) {
                         // Keep what was typed but not yet confirmed with return.
-                        filter.include(newIncluded)
-                        filter.exclude(newExcluded)
+                        store.filter.include(newIncluded)
+                        store.filter.exclude(newExcluded)
                         dismiss()
                     }
                 }

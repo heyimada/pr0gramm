@@ -10,25 +10,26 @@ struct MainToolbar: ToolbarContent {
         .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .topBarTrailing) {
             HStack(spacing: 12) {
-                FilterMenu()
+                FilterMenu { BarCircle { Image(systemName: "line.3.horizontal.decrease") } }
                 AccountItem()
             }
         }
         .sharedBackgroundVisibility(.hidden)
         #else
-        ToolbarItem(placement: .primaryAction) { FilterMenu() }
+        ToolbarItem(placement: .primaryAction) {
+            FilterMenu { BarCircle { Image(systemName: "line.3.horizontal.decrease") } }
+        }
         ToolbarItem(placement: .primaryAction) { AccountItem() }
         #endif
     }
 }
 
 /// SFW / NSFW / NSFL / POL toggles in a native menu.
-struct FilterMenu: View {
+struct FilterMenu<Label: View>: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @Environment(FeedLibrary.self) private var library
-    /// A bare white icon for overlays like the Reels header, instead of the toolbar circle.
-    var plain = false
+    @ViewBuilder let label: Label
 
     var body: some View {
         Menu {
@@ -47,18 +48,7 @@ struct FilterMenu: View {
                 }
             }
         } label: {
-            Group {
-                if plain {
-                    Image(systemName: "line.3.horizontal.decrease")
-                        .font(.system(size: 21, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .contentShape(.rect)
-                } else {
-                    BarCircle { Image(systemName: "line.3.horizontal.decrease") }
-                }
-            }
-            .accessibilityLabel("Filter")
+            label.accessibilityLabel("Filter")
         }
         .menuActionDismissBehavior(.disabled)
     }

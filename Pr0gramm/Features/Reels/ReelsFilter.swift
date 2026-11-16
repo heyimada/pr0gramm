@@ -1,3 +1,4 @@
+import Observation
 import SwiftUI
 
 /// What the Reels tab narrows every feed to: media type and tags to include or exclude. Persisted.
@@ -35,13 +36,23 @@ struct ReelsFilter: Codable, Equatable {
         excludedTags.append(tag)
     }
 
-    static func load() -> ReelsFilter {
-        guard let data = UserDefaults.standard.data(forKey: "reelsFilter"),
-              let filter = try? JSONDecoder().decode(ReelsFilter.self, from: data) else { return ReelsFilter() }
-        return filter
+    mutating func clearTags() {
+        includedTags = []
+        excludedTags = []
+    }
+}
+
+/// The persisted Reels filter, shared by the Reels screen, its filter sheet and the reels' tag menus.
+@Observable
+final class ReelsFilterStore {
+    var filter: ReelsFilter {
+        didSet { UserDefaults.standard.set(try? JSONEncoder().encode(filter), forKey: Self.key) }
     }
 
-    func save() {
-        UserDefaults.standard.set(try? JSONEncoder().encode(self), forKey: "reelsFilter")
+    private static let key = "reelsFilter"
+
+    init() {
+        filter = UserDefaults.standard.data(forKey: Self.key)
+            .flatMap { try? JSONDecoder().decode(ReelsFilter.self, from: $0) } ?? ReelsFilter()
     }
 }

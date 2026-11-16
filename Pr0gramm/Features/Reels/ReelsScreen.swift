@@ -5,7 +5,7 @@ import SwiftUI
 struct ReelsScreen: View {
     @Environment(Session.self) private var session
     @Environment(FeedLibrary.self) private var library
-    @State private var filter = ReelsFilter.load()
+    @State private var store = ReelsFilterStore()
     /// `nil` until the user picks a feed, so Reels follows changes to the default feed.
     @State private var selection: FeedSource?
     @State private var pool = ReelPlayerPool()
@@ -23,11 +23,9 @@ struct ReelsScreen: View {
     var body: some View {
         ZStack(alignment: .top) {
             FeedPager(sources: sources, current: current, onSwipe: { selection = $0 }) { source in
-                ReelsFeed(query: filter.query(for: library.query(for: source)),
-                          isSelected: source == current, pool: pool, insets: insets,
-                          onFilter: { tag, include in
-                              if include { filter.include(tag) } else { filter.exclude(tag) }
-                          })
+                let query = store.filter.query(for: library.query(for: source))
+                ReelsFeed(query: query, isSelected: source == current, pool: pool, insets: insets)
+                    .id(query)
             }
 
             // Keeps the header readable over bright posts, like Instagram's.
@@ -43,8 +41,8 @@ struct ReelsScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .onGeometryChange(for: EdgeInsets.self, of: \.safeAreaInsets) { insets = $0 }
-        .onChange(of: filter) { filter.save() }
-        .sheet(isPresented: $showsFilter) { ReelsFilterSheet(filter: $filter) }
+        .environment(store)
+        .sheet(isPresented: $showsFilter) { ReelsFilterSheet() }
         .onAppear { pool.resume() }
         .onDisappear { pool.pauseAll() }
     }
@@ -56,7 +54,7 @@ struct ReelsScreen: View {
                 Button { showsFilter = true } label: {
                     Image(systemName: "slider.horizontal.3")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(filter.hasTagFilter ? Color.pr0Orange : .white)
+                        .foregroundStyle(store.filter.hasTagFilter ? Color.pr0Orange : .white)
                         .frame(width: 36, height: 44)
                         .contentShape(.rect)
                 }
@@ -91,21 +89,24 @@ struct ReelsScreen: View {
                 }
 
                 // SFW / NSFW / NSFL / POL, which the hidden toolbar would otherwise hold.
-                FilterMenu(plain: true)
+                FilterMenu {
+                    Image(systemName: "line.3.horizontal.decrease")
+                        .font(.system(size: 21, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
+                }
             }
             .padding(.leading, 12)
             .padding(.trailing, 6)
             .shadow(color: .black.opacity(0.4), radius: 6)
 
-            if filter.hasTagFilter {
+            if store.filter.hasTagFilter {
                 Button { showsFilter = true } label: {
                     HStack(spacing: 8) {
                         Text(filterSummary).lineLimit(1)
                         Button {
-                            withAnimation {
-                                filter.includedTags = []
-                                filter.excludedTags = []
-                            }
+                            withAnimation { store.filter.clearTags() }
                         } label: {
                             Image(systemName: "xmark.circle.fill").foregroundStyle(Color.pr0Secondary)
                         }
@@ -124,11 +125,12 @@ struct ReelsScreen: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .animation(.snappy, value: filter.hasTagFilter)
+        .animation(.snappy, value: store.filter.hasTagFilter)
     }
 
     /// "#kadse +2" or "ohne #süßvieh".
     private var filterSummary: String {
+        let filter = store.filter
         let count = filter.includedTags.count + filter.excludedTags.count
         let first = filter.includedTags.first.map { "#\($0)" } ?? filter.excludedTags.first.map { "ohne #\($0)" } ?? ""
         return count > 1 ? "\(first) +\(count - 1)" : first
@@ -142,17 +144,14 @@ private struct ReelsFeed: View {
     let isSelected: Bool
     let pool: ReelPlayerPool
     let insets: EdgeInsets
-    let onFilter: (String, Bool) -> Void
     @State private var model: FeedModel
     @State private var currentID: Int?
 
-    init(query: FeedQuery, isSelected: Bool, pool: ReelPlayerPool, insets: EdgeInsets,
-         onFilter: @escaping (String, Bool) -> Void) {
+    init(query: FeedQuery, isSelected: Bool, pool: ReelPlayerPool, insets: EdgeInsets) {
         self.query = query
         self.isSelected = isSelected
         self.pool = pool
         self.insets = insets
-        self.onFilter = onFilter
         _model = State(initialValue: FeedModel(query: query))
     }
 
@@ -163,8 +162,7 @@ private struct ReelsFeed: View {
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
                     ForEach(model.items) { item in
-                        ReelPage(item: item, isActive: isSelected && item.id == currentID, pool: pool,
-                                 insets: insets, onFilter: onFilter)
+                        ReelPage(item: item, isActive: isSelected && item.id == currentID, pool: pool, insets: insets)
                             .frame(width: proxy.size.width, height: proxy.size.height)
                             .task { await model.loadMoreIfNeeded(after: item, flags: session.flags) }
                     }
@@ -189,11 +187,7 @@ private struct ReelsFeed: View {
                 }
             }
         }
-        .task(id: "\(query.tags ?? "")-\(query.stream.rawValue)-\(session.flags.rawValue)") {
-            if model.query != query {
-                model = FeedModel(query: query)
-                currentID = nil
-            }
+        .task(id: session.flags) {
             await model.loadIfNeeded(flags: session.flags)
             if currentID == nil || !model.items.contains(where: { $0.id == currentID }) {
                 currentID = model.items.first?.id
@@ -214,12 +208,11 @@ private struct ReelsFeed: View {
 private struct ReelPage: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    @Environment(ReelsFilterStore.self) private var store
     let item: FeedItem
     let isActive: Bool
     let pool: ReelPlayerPool
     let insets: EdgeInsets
-    /// Adds a tag to the Reels filter: `true` to require it, `false` to hide it.
-    let onFilter: (String, Bool) -> Void
 
     @State private var info: ItemInfo?
     @State private var showsComments = false
@@ -312,8 +305,8 @@ private struct ReelPage: View {
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
-                            Button("In Reels filtern", systemImage: "line.3.horizontal.decrease") { onFilter(tag.tag, true) }
-                            Button("In Reels ausblenden", systemImage: "eye.slash") { onFilter(tag.tag, false) }
+                            Button("In Reels filtern", systemImage: "line.3.horizontal.decrease") { store.filter.include(tag.tag) }
+                            Button("In Reels ausblenden", systemImage: "eye.slash") { store.filter.exclude(tag.tag) }
                         }
                     }
                 }
