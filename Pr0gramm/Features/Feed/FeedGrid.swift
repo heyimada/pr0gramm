@@ -40,6 +40,11 @@ struct FeedGrid<Header: View>: View {
 
             if model.isLoading {
                 ProgressView().padding()
+            } else if model.pagingFailed && !model.items.isEmpty {
+                Button("Erneut versuchen") { Task { await model.retryPaging(flags: session.flags) } }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .padding()
             }
 
             // Inline rather than an overlay so a header (e.g. on profiles) stays visible.

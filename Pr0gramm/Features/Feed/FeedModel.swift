@@ -9,6 +9,7 @@ final class FeedModel {
     private(set) var items: [FeedItem] = []
     private(set) var isLoading = false
     private(set) var atEnd = false
+    private(set) var pagingFailed = false
     private(set) var error: Error?
 
     @ObservationIgnored private var loadedFlags: ContentFlags?
@@ -35,6 +36,7 @@ final class FeedModel {
             atEnd = response.atEnd
             loadedFlags = flags
             error = nil
+            pagingFailed = false
         } catch is CancellationError {
         } catch {
             self.error = error
@@ -44,15 +46,22 @@ final class FeedModel {
     private func loadMore(flags: ContentFlags) async {
         guard !isLoading, !atEnd, let last = items.last else { return }
         isLoading = true
+        pagingFailed = false
         defer { isLoading = false }
         do {
             let response = try await APIClient.shared.items(query, flags: flags, older: query.cursor(for: last))
             let known = Set(items.map(\.id))
             items.append(contentsOf: response.items.filter { !known.contains($0.id) })
             atEnd = response.atEnd || response.items.isEmpty
+        } catch is CancellationError {
+        } catch let error as URLError where error.code == .cancelled {
         } catch {
-            // Paging errors are silent; the next scroll attempt retries.
+            pagingFailed = true
         }
+    }
+
+    func retryPaging(flags: ContentFlags) async {
+        await loadMore(flags: flags)
     }
 
     func loadMoreIfNeeded(after item: FeedItem, flags: ContentFlags) async {
