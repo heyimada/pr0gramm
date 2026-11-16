@@ -82,6 +82,7 @@ struct SingleItemScreen: View {
             }
             item = match
             error = nil
+        } catch where error.isCancellation {
         } catch {
             self.error = error
         }

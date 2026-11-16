@@ -1,5 +1,11 @@
 import Foundation
 
+extension Error {
+    var isCancellation: Bool {
+        self is CancellationError || (self as? URLError)?.code == .cancelled
+    }
+}
+
 enum APIError: LocalizedError {
     case http(Int)
     case message(String)

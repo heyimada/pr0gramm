@@ -15,7 +15,7 @@ final class ItemDetails {
         do {
             info = try await APIClient.shared.itemInfo(itemID)
             error = nil
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             self.error = error
         }

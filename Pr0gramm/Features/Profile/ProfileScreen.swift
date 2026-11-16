@@ -28,7 +28,7 @@ struct ProfileScreen: View {
         do {
             profile = try await APIClient.shared.profile(name, flags: session.flags)
             error = nil
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             self.error = error
         }

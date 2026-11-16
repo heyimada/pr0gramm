@@ -44,7 +44,7 @@ final class FeedModel {
             loadedFlags = flags
             error = nil
             pagingFailed = false
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             guard reload == latestReload else { return }
             self.error = error
@@ -63,8 +63,7 @@ final class FeedModel {
             let known = Set(items.map(\.id))
             items.append(contentsOf: response.items.filter { !known.contains($0.id) })
             atEnd = response.atEnd || response.items.isEmpty
-        } catch is CancellationError {
-        } catch let error as URLError where error.code == .cancelled {
+        } catch where error.isCancellation {
         } catch {
             guard version == listVersion else { return }
             pagingFailed = true
