@@ -51,7 +51,7 @@ final class FeedModel {
         }
     }
 
-    private func loadMore(flags: ContentFlags) async {
+    func loadMore(flags: ContentFlags) async {
         guard !isLoading, !atEnd, let last = items.last else { return }
         let version = listVersion
         isLoading = true
@@ -68,10 +68,6 @@ final class FeedModel {
             guard version == listVersion else { return }
             pagingFailed = true
         }
-    }
-
-    func retryPaging(flags: ContentFlags) async {
-        await loadMore(flags: flags)
     }
 
     /// Starts the next page without tying it to the caller's task: lazy stacks cancel a page's

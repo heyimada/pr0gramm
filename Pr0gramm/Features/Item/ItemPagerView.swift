@@ -21,7 +21,8 @@ struct ItemPagerView: View {
                 LazyHStack(spacing: 0) {
                     ForEach(model.items) { item in
                         ItemDetailView(item: item, isActive: item.id == currentID, pageSize: pageSize,
-                                       sideInsets: insets, step: { step(from: item, by: $0) })
+                                       sideInsets: insets,
+                                       previous: step(from: item, by: -1), next: step(from: item, by: 1))
                             .containerRelativeFrame([.horizontal, .vertical])
                             .onAppear { model.loadMoreIfNeeded(after: item, flags: session.flags) }
                     }

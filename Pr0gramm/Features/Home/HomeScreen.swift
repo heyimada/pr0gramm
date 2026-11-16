@@ -103,6 +103,7 @@ private struct AmbientBackdrop: View {
 private struct HeroCard: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(PlaybackSettings.self) private var playback
+    @Environment(Session.self) private var session
     let item: FeedItem
     let isToday: Bool
     let route: Route
@@ -183,7 +184,7 @@ private struct HeroCard: View {
             HStack(spacing: 6) {
                 Text(item.user)
                 Text("·")
-                Text("\(item.score.formatted()) Benis")
+                Text("\(session.score(of: item).formatted()) Benis")
                 Text("·")
                 Text(item.createdAt.pr0Age)
             }
@@ -243,6 +244,7 @@ private struct TopRail: View {
 }
 
 private struct RailCard: View {
+    @Environment(Session.self) private var session
     let item: FeedItem
     let rank: Int
 
@@ -266,7 +268,7 @@ private struct RailCard: View {
                     .foregroundStyle(Color.pr0Orange)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(item.user).font(.subheadline.weight(.semibold)).lineLimit(1)
-                    Text("\(item.score.formatted()) Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
+                    Text("\(session.score(of: item).formatted()) Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
                 }
             }
             .frame(width: 170, alignment: .leading)

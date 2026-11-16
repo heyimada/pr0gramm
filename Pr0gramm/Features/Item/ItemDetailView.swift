@@ -7,19 +7,21 @@ struct ItemDetailView: View {
     let pageSize: CGSize
     /// Leading and trailing safe-area insets the page spans but must keep its content out of, e.g.
     /// the vertical bar of an iPhone Duo. Backgrounds still run underneath.
-    var sideInsets = EdgeInsets()
-    var step: (Int) -> (() -> Void)? = { _ in nil }
+    let sideInsets: EdgeInsets
+    let previous: (() -> Void)?
+    let next: (() -> Void)?
 
     @State private var details: ItemDetails
     @State private var playback = VideoPlayback()
 
     init(item: FeedItem, isActive: Bool, pageSize: CGSize, sideInsets: EdgeInsets = EdgeInsets(),
-         step: @escaping (Int) -> (() -> Void)? = { _ in nil }) {
+         previous: (() -> Void)? = nil, next: (() -> Void)? = nil) {
         self.item = item
         self.isActive = isActive
         self.pageSize = pageSize
         self.sideInsets = sideInsets
-        self.step = step
+        self.previous = previous
+        self.next = next
         _details = State(initialValue: ItemDetails(itemID: item.id))
     }
 
@@ -68,7 +70,7 @@ struct ItemDetailView: View {
     private func media(maxHeight: CGFloat, insets: EdgeInsets = EdgeInsets()) -> some View {
         VStack(spacing: 0) {
             MediaView(item: item, isActive: isActive, playback: playback, maxHeight: maxHeight)
-                .overlay { StepArrows(previous: step(-1), next: step(1)) }
+                .overlay { StepArrows(previous: previous, next: next) }
                 .padding(.leading, insets.leading)
                 .padding(.trailing, insets.trailing)
                 .background(Color.black)

@@ -48,7 +48,7 @@ struct CommentsSection: View {
                 Spacer()
                 if session.isLoggedIn {
                     Button("Kommentieren", systemImage: "square.and.pencil") {
-                        details.replyTarget = ReplyTarget(parentId: 0, name: item.user)
+                        details.replyTarget = ReplyTarget(parentId: 0, name: nil)
                     }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -78,7 +78,7 @@ struct CommentsSection: View {
 
 struct ReplyTarget: Identifiable {
     let parentId: Int
-    let name: String
+    let name: String?
     var id: Int { parentId }
 }
 
@@ -89,7 +89,7 @@ extension View {
         @Bindable var details = details
         return sheet(item: $details.replyTarget) { target in
             CommentComposer(itemId: item.id, parentId: target.parentId,
-                            replyingTo: target.parentId == 0 ? nil : target.name) { comments in
+                            replyingTo: target.name) { comments in
                 Task { await details.apply(postedComments: comments) }
             }
         }

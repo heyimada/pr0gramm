@@ -85,7 +85,7 @@ struct PagingRetry: View {
 
     var body: some View {
         if model.pagingFailed && !model.items.isEmpty {
-            Button("Erneut versuchen") { Task { await model.retryPaging(flags: session.flags) } }
+            Button("Erneut versuchen") { Task { await model.loadMore(flags: session.flags) } }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
         }
