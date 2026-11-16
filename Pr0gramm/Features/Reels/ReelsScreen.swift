@@ -166,7 +166,7 @@ private struct ReelsFeed: View {
                     ForEach(model.items) { item in
                         ReelPage(item: item, isActive: isSelected && item.id == currentID, pool: pool, insets: insets)
                             .frame(width: proxy.size.width, height: proxy.size.height)
-                            .task { await model.loadMoreIfNeeded(after: item, flags: session.flags) }
+                            .onAppear { model.loadMoreIfNeeded(after: item, flags: session.flags) }
                     }
                 }
                 .scrollTargetLayout()
@@ -177,7 +177,7 @@ private struct ReelsFeed: View {
         }
         .ignoresSafeArea()
         .overlay { FeedStatus(model: model, emptySymbol: "play.slash") }
-        .overlay(alignment: .bottom) { PagingRetry(model: model).padding(.bottom, insets.bottom + 72) }
+        .overlay { PagingRetry(model: model) }
         .task(id: session.flags) {
             await model.loadIfNeeded(flags: session.flags)
             if currentID == nil || !model.items.contains(where: { $0.id == currentID }) {

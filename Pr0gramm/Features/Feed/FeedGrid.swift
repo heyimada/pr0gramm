@@ -31,7 +31,7 @@ struct FeedGrid<Header: View>: View {
                     #else
                     .matchedTransitionSource(id: item.id, in: namespace)
                     #endif
-                    .task { await model.loadMoreIfNeeded(after: item, flags: session.flags) }
+                    .onAppear { model.loadMoreIfNeeded(after: item, flags: session.flags) }
                 }
             }
             #if os(visionOS)

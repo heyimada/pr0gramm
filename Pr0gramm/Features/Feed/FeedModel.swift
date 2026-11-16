@@ -75,9 +75,11 @@ final class FeedModel {
         await loadMore(flags: flags)
     }
 
-    func loadMoreIfNeeded(after item: FeedItem, flags: ContentFlags) async {
+    /// Starts the next page without tying it to the caller's task: lazy stacks cancel a page's
+    /// task when it scrolls away, and a cancelled page load would never be asked for again.
+    func loadMoreIfNeeded(after item: FeedItem, flags: ContentFlags) {
         guard let index = items.firstIndex(of: item), index >= items.count - 12 else { return }
-        await loadMore(flags: flags)
+        Task { await loadMore(flags: flags) }
     }
 }
 

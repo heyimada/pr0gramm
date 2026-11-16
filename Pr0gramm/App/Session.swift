@@ -19,7 +19,9 @@ final class Session {
     }
 
     private(set) var votes: [VoteTarget: [Int: Int]] = [:]
-    @ObservationIgnored private var votesWhenFirstShown: [Int: Int] = [:]
+    /// The vote each server copy of a post (its id and counts) was first shown with.
+    @ObservationIgnored private var votesWhenFirstShown: [ServerCopy: Int] = [:]
+    private struct ServerCopy: Hashable { let id, up, down: Int }
 
     private let defaults: UserDefaults
     private var syncOffset: Int
@@ -104,12 +106,13 @@ final class Session {
     }
 
     /// The server's up and down counts already include the vote it had when the post was loaded,
-    /// so only changes made since then are added. That vote is taken as the one this app run
-    /// first showed the post with.
+    /// so only changes made since then are added. That vote is taken as the one this server copy
+    /// of the post was first shown with; a reloaded copy with new counts starts over.
     func score(of item: FeedItem) -> Int {
         let vote = vote(for: .item, id: item.id)
-        let known = votesWhenFirstShown[item.id] ?? vote
-        votesWhenFirstShown[item.id] = known
+        let copy = ServerCopy(id: item.id, up: item.up, down: item.down)
+        let known = votesWhenFirstShown[copy] ?? vote
+        votesWhenFirstShown[copy] = known
         return item.score + vote - known
     }
 
@@ -148,6 +151,8 @@ final class Session {
             for entry in Self.votes(fromLog: data) {
                 votes[entry.target, default: [:]][entry.id] = entry.value
             }
+            // Votes learned from the log were already in the counts of every post shown so far.
+            votesWhenFirstShown = [:]
         }
         if let length = response.logLength { syncOffset = length }
         saveVotes()

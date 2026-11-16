@@ -113,3 +113,4 @@ Site => ["https://pr0gramm.com/new/42", "https://pr0gramm.com/user/cha0s", "http
 Site.isOwn => [true, true, true, false]
 ItemInfo tag order => ["a", "c", "b"]
 score with an earlier vote => [8, 8]
+score of a reloaded copy => 9

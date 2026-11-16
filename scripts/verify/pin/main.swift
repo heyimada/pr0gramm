@@ -218,3 +218,5 @@ scoreDefaults.set(Data(#"{"items":{"42":1},"comments":{},"tags":{}}"#.utf8), for
 let scoreSession = Session(defaults: scoreDefaults)
 show("score with an earlier vote", [scoreSession.score(of: item), scoreSession.score(of: item)])
 scoreDefaults.removePersistentDomain(forName: scoreSuite)
+let refreshed = try! JSONDecoder().decode(FeedItem.self, from: Data(itemJSON.replacingOccurrences(of: #""up":10"#, with: #""up":11"#).utf8))
+show("score of a reloaded copy", scoreSession.score(of: refreshed))

@@ -23,7 +23,7 @@ struct ItemPagerView: View {
                         ItemDetailView(item: item, isActive: item.id == currentID, pageSize: pageSize,
                                        sideInsets: insets, step: { step(from: item, by: $0) })
                             .containerRelativeFrame([.horizontal, .vertical])
-                            .task { await model.loadMoreIfNeeded(after: item, flags: session.flags) }
+                            .onAppear { model.loadMoreIfNeeded(after: item, flags: session.flags) }
                     }
                 }
                 .scrollTargetLayout()
