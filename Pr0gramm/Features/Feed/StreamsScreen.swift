@@ -20,35 +20,19 @@ struct StreamsScreen: View {
 
     var body: some View {
         // Pages span the whole screen so posts scroll under the toolbar, the floating switcher and
-        // the tab bar; margins keep the first and last rows clear of them. A paging scroll view
-        // rather than a page-style TabView, whose pages come with insets of their own.
+        // the tab bar; margins keep the first and last rows clear of them.
         GeometryReader { outer in
             let insets = outer.safeAreaInsets
             // Leading and trailing too: the closed iPhone Duo keeps its tab bar along the right edge.
             let margins = EdgeInsets(top: insets.top + switcherHeight, leading: insets.leading,
                                      bottom: insets.bottom, trailing: insets.trailing)
-            GeometryReader { proxy in
-                ScrollView(.horizontal) {
-                    // Not lazy, so every feed keeps its scroll position.
-                    HStack(spacing: 0) {
-                        ForEach(sources, id: \.self) { source in
-                            let query = library.query(for: source)
-                            FeedGrid(model: cache.model(for: query), onScroll: collapse.scrolled(to:))
-                                .contentMargins(.all, margins, for: .scrollContent)
-                                .contentMargins(.all, margins, for: .scrollIndicators)
-                                .id(query)
-                                .frame(width: proxy.size.width, height: proxy.size.height)
-                                .id(source)
-                        }
-                    }
-                    .scrollTargetLayout()
-                }
-                .scrollTargetBehavior(.paging)
-                .modifier(FeedPaging(current: current) { selection = $0 })
-                .scrollIndicators(.hidden)
-                .scrollBounceBehavior(.basedOnSize)
+            FeedPager(sources: sources, current: current, onSwipe: { selection = $0 }) { source in
+                let query = library.query(for: source)
+                FeedGrid(model: cache.model(for: query), onScroll: collapse.scrolled(to:))
+                    .contentMargins(.all, margins, for: .scrollContent)
+                    .contentMargins(.all, margins, for: .scrollIndicators)
+                    .id(query)
             }
-            .ignoresSafeArea()
         }
         .background(Color.pr0Background)
         .onChange(of: current) { collapse.reset() }

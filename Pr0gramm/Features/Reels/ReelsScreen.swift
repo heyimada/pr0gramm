@@ -22,29 +22,13 @@ struct ReelsScreen: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // A paging scroll view rather than a page-style TabView, whose pan gesture leaves the
-            // vertical reels stuck between pages. Not lazy, so every feed keeps its place.
-            GeometryReader { proxy in
-                ScrollView(.horizontal) {
-                    HStack(spacing: 0) {
-                        ForEach(sources, id: \.self) { source in
-                            ReelsFeed(query: filter.query(for: library.query(for: source)),
-                                      isSelected: source == current, pool: pool, insets: insets,
-                                      onFilter: { tag, include in
-                                          if include { filter.include(tag) } else { filter.exclude(tag) }
-                                      })
-                                .frame(width: proxy.size.width, height: proxy.size.height)
-                                .id(source)
-                        }
-                    }
-                    .scrollTargetLayout()
-                }
-                .scrollTargetBehavior(.paging)
-                .modifier(FeedPaging(current: current) { selection = $0 })
-                .scrollIndicators(.hidden)
-                .scrollBounceBehavior(.basedOnSize)
+            FeedPager(sources: sources, current: current, onSwipe: { selection = $0 }) { source in
+                ReelsFeed(query: filter.query(for: library.query(for: source)),
+                          isSelected: source == current, pool: pool, insets: insets,
+                          onFilter: { tag, include in
+                              if include { filter.include(tag) } else { filter.exclude(tag) }
+                          })
             }
-            .ignoresSafeArea()
 
             // Keeps the header readable over bright posts, like Instagram's.
             LinearGradient(colors: [.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
