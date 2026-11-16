@@ -11,7 +11,7 @@ tags="kadse - x" => {"stream":"new","tags":"! kadse - x"}
 tags="kadse" => "kadse"
 tags="! kadse s:1000" => "kadse s:1000"
 tags="!kadse" => "kadse"
-tags="  ! kadse " => "! kadse"
+tags="  ! kadse " => "kadse"
 tags="" => ""
 tags="!" => ""
 tags=nil => ""
@@ -104,3 +104,4 @@ autoplay/muted/resets => [true, true, false]
 selected flags after reset-on-launch => 1
 ## Vote log
 vote log base64 => AgEAAAMHAAAAAQAAAQAGCQAAAAcKAAAAAgsAAAAM
+decoded => ["item:258=1", "item:7=-1", "comment:65536=1", "tag:9=-1", "item:10=0"]

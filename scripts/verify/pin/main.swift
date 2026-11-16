@@ -199,3 +199,4 @@ for (id, action) in [(258, UInt8(3)), (7, 1), (65_536, 6), (9, 7), (10, 2), (11,
     log.append(action)
 }
 show("vote log base64", log.base64EncodedString())
+show("decoded", Session.votes(fromLog: log).map { "\($0.target):\($0.id)=\($0.value)" })

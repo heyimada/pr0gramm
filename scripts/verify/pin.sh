@@ -5,13 +5,13 @@
 #   scripts/verify/pin.sh            compare against the baseline
 #   scripts/verify/pin.sh --record   overwrite the baseline
 #
-# SIMULATOR picks the device (default: the iPhone Duo); it is booted if needed.
+# SIMULATOR picks the device (default: iPhone 18 Pro, so it never competes with a Duo); it is booted if needed.
 set -euo pipefail
 
 root=${0:A:h:h:h}
 here=${0:A:h}
 out=$root/build/pin
-device=${SIMULATOR:-iPhone Duo}
+device=${SIMULATOR:-iPhone 18 Pro}
 mkdir -p $out
 
 sources=(${(f)"$(grep -rL '^@main' $root/Pr0gramm --include='*.swift')"})
