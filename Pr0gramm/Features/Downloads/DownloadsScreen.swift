@@ -46,7 +46,7 @@ struct DownloadActions: View {
             Label("Teilen", systemImage: "square.and.arrow.up")
         }
         Button("In Fotos sichern", systemImage: "photo.badge.arrow.down") {
-            Task { try? await store.saveToPhotos(download) }
+            Task { await store.saveToPhotos(download) }
         }
         Button("Löschen", systemImage: "trash", role: .destructive) {
             store.delete(download)
@@ -102,16 +102,13 @@ struct DownloadViewer: View {
 struct DownloadButton: View {
     @Environment(DownloadStore.self) private var store
     let item: FeedItem
-    @State private var failed = false
 
     var body: some View {
         let state = store.state(for: item.id)
         let isSaved = state == .saved
         let isLoading = state == .loading
         Button {
-            Task {
-                do { try await store.save(item) } catch { failed = true }
-            }
+            Task { await store.save(item) }
         } label: {
             if isLoading {
                 ProgressView()
@@ -126,6 +123,5 @@ struct DownloadButton: View {
         }
         .buttonStyle(.plain)
         .disabled(isSaved || isLoading)
-        .alert("Download fehlgeschlagen", isPresented: $failed) {}
     }
 }

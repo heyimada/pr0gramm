@@ -59,6 +59,7 @@ struct RootView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @Environment(FeedLibrary.self) private var library
+    @Environment(DownloadStore.self) private var downloads
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -89,6 +90,14 @@ struct RootView: View {
         .sheet(isPresented: $app.showsLogin) { LoginView() }
         .sheet(isPresented: $app.showsSettings) { SettingsView() }
         .alert("Abstimmen fehlgeschlagen", isPresented: $app.showsVoteFailure) {}
+        .alert(
+            downloads.failure?.title ?? "",
+            isPresented: Binding(get: { downloads.failure != nil }, set: { if !$0 { downloads.dismissFailure() } })
+        ) {
+            Button("OK") {}
+        } message: {
+            Text(downloads.failure?.message ?? "")
+        }
         .task { await session.sync() }
         .onChange(of: scenePhase) {
             // Protected feeds need Face ID again after leaving the app.

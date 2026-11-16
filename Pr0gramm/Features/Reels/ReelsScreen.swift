@@ -418,7 +418,7 @@ private struct ReelDownloadAction: View {
         let isSaved = state == .saved
         let isLoading = state == .loading
         Button {
-            Task { try? await store.save(item) }
+            Task { await store.save(item) }
         } label: {
             VStack(spacing: 4) {
                 Group {

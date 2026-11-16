@@ -15,6 +15,7 @@ enum DownloadState { case notSaved, loading, saved }
 final class DownloadStore {
     private(set) var downloads: [Download] = []
     private var inProgress: Set<Int> = []
+    private(set) var failure: (title: String, message: String)?
 
     private let directory: URL
     private var indexURL: URL { directory.appending(path: "index.json") }
@@ -48,11 +49,22 @@ final class DownloadStore {
     }
 
     /// Downloads the best available file (fullsize image or H.264 video).
-    func save(_ item: FeedItem) async throws {
+    func save(_ item: FeedItem) async {
         guard download(for: item.id) == nil, !inProgress.contains(item.id) else { return }
         inProgress.insert(item.id)
         defer { inProgress.remove(item.id) }
+        do {
+            try await fetch(item)
+        } catch {
+            failure = ("Download fehlgeschlagen", error.localizedDescription)
+        }
+    }
 
+    func dismissFailure() {
+        failure = nil
+    }
+
+    private func fetch(_ item: FeedItem) async throws {
         let source = item.bestURL
         let (temporary, response) = try await URLSession.shared.download(from: source)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
@@ -79,7 +91,15 @@ final class DownloadStore {
         persist()
     }
 
-    func saveToPhotos(_ download: Download) async throws {
+    func saveToPhotos(_ download: Download) async {
+        do {
+            try await addToPhotos(download)
+        } catch {
+            failure = ("In Fotos sichern fehlgeschlagen", error.localizedDescription)
+        }
+    }
+
+    private func addToPhotos(_ download: Download) async throws {
         let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
         guard status == .authorized || status == .limited else {
             throw APIError.message("Kein Zugriff auf die Fotos. Erlaube ihn in den Einstellungen.")
