@@ -1,0 +1,21 @@
+## tabs
+[button] "Start" [selected]
+[button] "Feed"
+[button] "Reels"
+[button] "Downloads"
+[button] "Suchen"
+## start switcher
+[button] "beliebt"
+[button] "neu"
+[button] "müll"
+[button] "Katzen" [selected]
+## video settings
+[switch] "Automatisch abspielen" [unchecked]
+[switch] "Stumm starten" [unchecked]
+## reels filter
+] "#kadse +1"
+## downloads
+] "Post 42 von cha0s öffnen"
+## recent searches
+[button] "kadse"
+[button] "fogel"
