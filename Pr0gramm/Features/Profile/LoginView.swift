@@ -94,7 +94,7 @@ struct LoginView: View {
         captcha = nil
         captchaText = ""
         do {
-            captcha = try await session.captcha()
+            captcha = try await APIClient.shared.captcha()
         } catch {
             self.error = error
         }

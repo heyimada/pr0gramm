@@ -2,7 +2,7 @@ import Foundation
 
 enum APIError: LocalizedError {
     case http(Int)
-    case server(String)
+    case message(String)
     case notLoggedIn
 
     var errorDescription: String? {
@@ -10,7 +10,7 @@ enum APIError: LocalizedError {
         case .http(429): "Zu viele Anfragen. Bitte kurz warten."
         case .http(403): "Keine Berechtigung."
         case .http(let code): "Serverfehler (\(code))."
-        case .server(let message): message
+        case .message(let message): message
         case .notLoggedIn: "Dafür musst du angemeldet sein."
         }
     }
@@ -59,7 +59,7 @@ final class APIClient {
         let (data, response) = try await session.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             if let body = try? decoder.decode(ServerError.self, from: data), let message = body.message {
-                throw APIError.server(message)
+                throw APIError.message(message)
             }
             throw APIError.http(http.statusCode)
         }
@@ -80,7 +80,7 @@ final class APIClient {
         params["older"] = older.map(String.init)
         params["id"] = id.map(String.init)
         let response: FeedResponse = try await get("items/get", params)
-        if let error = response.error { throw APIError.server(Self.describe(feedError: error)) }
+        if let error = response.error { throw APIError.message(Self.describe(feedError: error)) }
         return response
     }
 

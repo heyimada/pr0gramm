@@ -7,7 +7,7 @@ final class Session {
     private(set) var userName: String?
     /// The logged-in user's Benis, shown in the side menu.
     private(set) var userScore: Int?
-    private(set) var isSyncing = false
+    @ObservationIgnored private var isSyncing = false
 
     /// Content ratings the user wants to see. Only applied while logged in; guests always get SFW.
     var selectedFlags: ContentFlags {
@@ -31,15 +31,13 @@ final class Session {
     private(set) var commentVotes: [Int: Int] = [:]
     private(set) var tagVotes: [Int: Int] = [:]
 
-    private let api: APIClient
     private let defaults: UserDefaults
     private var syncOffset: Int
 
     var isLoggedIn: Bool { userName != nil }
     var flags: ContentFlags { isLoggedIn && !selectedFlags.isEmpty ? selectedFlags : .sfw }
 
-    init(api: APIClient = .shared, defaults: UserDefaults = .standard) {
-        self.api = api
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let resetsFlags = defaults.bool(forKey: Keys.resetsFlags)
         resetsFlagsOnLaunch = resetsFlags
@@ -70,16 +68,12 @@ final class Session {
     /// CSRF token the API expects as `_nonce` on every mutating request.
     private var nonce: String? { meCookie.map { String($0.id.prefix(16)) } }
 
-    func refreshFromCookie() {
+    private func refreshFromCookie() {
         userName = meCookie?.name
     }
 
-    func captcha() async throws -> Captcha {
-        try await api.captcha()
-    }
-
     func login(name: String, password: String, captcha: String, token: String) async throws {
-        let response = try await api.login(name: name, password: password, captcha: captcha, token: token)
+        let response = try await APIClient.shared.login(name: name, password: password, captcha: captcha, token: token)
         guard response.success else {
             let message = switch response.error {
             case "invalidCaptcha": "Das Captcha war falsch."
@@ -87,7 +81,7 @@ final class Session {
             case "banned": "Dieser Account ist gesperrt."
             default: response.error ?? "Anmeldung fehlgeschlagen."
             }
-            throw APIError.server(message)
+            throw APIError.message(message)
         }
         refreshFromCookie()
         await sync()
@@ -95,7 +89,7 @@ final class Session {
 
     func logout() async {
         if let me = meCookie, let nonce {
-            try? await api.logout(id: me.id, nonce: nonce)
+            try? await APIClient.shared.logout(id: me.id, nonce: nonce)
         }
         let storage = HTTPCookieStorage.shared
         storage.cookies(for: URL(string: "https://pr0gramm.com")!)?.forEach(storage.deleteCookie)
@@ -124,7 +118,7 @@ final class Session {
         let previous = vote(for: target, id: id)
         setVote(target, id: id, value: value)
         do {
-            try await api.vote(target, id: id, vote: value, nonce: nonce)
+            try await APIClient.shared.vote(target, id: id, vote: value, nonce: nonce)
             saveVotes()
         } catch {
             setVote(target, id: id, value: previous)
@@ -134,7 +128,7 @@ final class Session {
 
     func postComment(itemId: Int, parentId: Int, text: String) async throws -> [Comment]? {
         guard let nonce else { throw APIError.notLoggedIn }
-        return try await api.postComment(itemId: itemId, parentId: parentId, text: text, nonce: nonce).comments
+        return try await APIClient.shared.postComment(itemId: itemId, parentId: parentId, text: text, nonce: nonce).comments
     }
 
     private func setVote(_ target: VoteTarget, id: Int, value: Int) {
@@ -151,8 +145,8 @@ final class Session {
         guard let userName, !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
-        userScore = try? await api.profile(userName, flags: flags).user.score
-        guard let response = try? await api.sync(offset: syncOffset) else { return }
+        userScore = try? await APIClient.shared.profile(userName, flags: flags).user.score
+        guard let response = try? await APIClient.shared.sync(offset: syncOffset) else { return }
         if let log = response.log, let data = Data(base64Encoded: log) {
             let bytes = [UInt8](data)
             for start in stride(from: 0, to: bytes.count - 4, by: 5) {

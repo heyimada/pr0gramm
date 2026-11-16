@@ -78,7 +78,7 @@ final class DownloadStore {
     func saveToPhotos(_ download: Download) async throws {
         let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
         guard status == .authorized || status == .limited else {
-            throw APIError.server("Kein Zugriff auf die Fotos. Erlaube ihn in den Einstellungen.")
+            throw APIError.message("Kein Zugriff auf die Fotos. Erlaube ihn in den Einstellungen.")
         }
         let url = fileURL(for: download)
         let isVideo = download.item.isVideo

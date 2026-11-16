@@ -91,7 +91,7 @@ struct AccountItem: View {
         if let name = session.userName {
             Menu {
                 Section {
-                    Button("Mein Profil", systemImage: "person") { app.open(.user(name)) }
+                    Button("Mein Profil", systemImage: "person") { app.router.push(.user(name)) }
                 } header: {
                     if let score = session.userScore {
                         Text("\(name) · \(score.formatted()) Benis")

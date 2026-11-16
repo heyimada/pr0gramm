@@ -80,7 +80,7 @@ struct SingleItemScreen: View {
             // `id` returns a page of items around the requested one; the new stream contains everything.
             let response = try await APIClient.shared.items(.new, flags: session.flags, around: id)
             guard let match = response.items.first(where: { $0.id == id }) else {
-                throw APIError.server("Dieser Post ist nicht (mehr) verfügbar oder dein Filter blendet ihn aus.")
+                throw APIError.message("Dieser Post ist nicht (mehr) verfügbar oder dein Filter blendet ihn aus.")
             }
             item = match
             error = nil

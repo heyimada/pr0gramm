@@ -201,8 +201,4 @@ final class AppState {
         let tabs = tabOrder.filter { $0 != .subscribed || isLoggedIn }
         return tabs.isEmpty ? [.top] : tabs
     }
-
-    func open(_ route: Route) {
-        router.push(route)
-    }
 }

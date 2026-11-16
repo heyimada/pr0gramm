@@ -9,20 +9,10 @@ struct ContentFlags: OptionSet, Hashable, Codable, Sendable {
     static let nsfl = ContentFlags(rawValue: 4)
     static let nsfp = ContentFlags(rawValue: 8)
     static let pol = ContentFlags(rawValue: 16)
-
-    /// Label of the most severe rating contained in the set, as shown on items.
-    var badge: String? {
-        if contains(.nsfl) { return "NSFL" }
-        if contains(.nsfw) { return "NSFW" }
-        if contains(.pol) { return "POL" }
-        if contains(.nsfp) { return "NSFP" }
-        return nil
-    }
 }
 
 struct FeedResponse: Decodable {
     let atEnd: Bool
-    let atStart: Bool
     let error: String?
     let items: [FeedItem]
 }

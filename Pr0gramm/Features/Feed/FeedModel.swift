@@ -11,18 +11,15 @@ final class FeedModel {
     private(set) var atEnd = false
     private(set) var error: Error?
 
-    @ObservationIgnored private let api: APIClient
     @ObservationIgnored private var loadedFlags: ContentFlags?
 
-    init(query: FeedQuery, api: APIClient = .shared) {
+    init(query: FeedQuery) {
         self.query = query
-        self.api = api
     }
 
     /// A fixed list, e.g. the "Top 10 heute" rail, so it can be opened in the pager.
     init(items: [FeedItem], query: FeedQuery) {
         self.query = query
-        self.api = .shared
         self.items = items
         atEnd = true
     }
@@ -35,7 +32,7 @@ final class FeedModel {
 
     func reload(flags: ContentFlags) async {
         do {
-            let response = try await api.items(query, flags: flags)
+            let response = try await APIClient.shared.items(query, flags: flags)
             items = response.items
             atEnd = response.atEnd
             loadedFlags = flags
@@ -51,7 +48,7 @@ final class FeedModel {
         isLoading = true
         defer { isLoading = false }
         do {
-            let response = try await api.items(query, flags: flags, older: query.cursor(for: last))
+            let response = try await APIClient.shared.items(query, flags: flags, older: query.cursor(for: last))
             let known = Set(items.map(\.id))
             items.append(contentsOf: response.items.filter { !known.contains($0.id) })
             atEnd = response.atEnd || response.items.isEmpty
