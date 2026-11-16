@@ -43,8 +43,8 @@ final class DownloadStore {
 
     var totalBytes: Int64 {
         downloads.reduce(0) { total, download in
-            let attributes = try? FileManager.default.attributesOfItem(atPath: fileURL(for: download).path())
-            return total + ((attributes?[.size] as? NSNumber)?.int64Value ?? 0)
+            let size = try? fileURL(for: download).resourceValues(forKeys: [.fileSizeKey]).fileSize
+            return total + Int64(size ?? 0)
         }
     }
 
