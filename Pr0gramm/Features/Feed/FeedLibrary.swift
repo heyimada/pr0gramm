@@ -56,8 +56,8 @@ final class FeedLibrary {
     /// The switcher's entries: beliebt · neu · müll, abos if wanted and logged in, then the visible
     /// custom feeds. Feeds bound to filters that are all off, and locked protected feeds, are left out.
     func sources(withSubscriptions: Bool) -> [FeedSource] {
-        FeedStream.searchable.map(FeedSource.stream)
-            + (withSubscriptions && session.isLoggedIn ? [.stream(.subscribed)] : [])
+        (FeedStream.searchable + (withSubscriptions ? [.subscribed] : []))
+            .filter { session.isLoggedIn || !$0.requiresLogin }.map(FeedSource.stream)
             + customFeeds.filter { $0.isVisible(with: session.flags) && isAccessible($0) }.map { .custom($0.id) }
     }
 

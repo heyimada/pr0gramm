@@ -12,6 +12,8 @@ nonisolated enum FeedStream: String, Hashable, Codable, CaseIterable, Identifiab
 
     var id: Self { self }
 
+    var requiresLogin: Bool { self == .subscribed }
+
     var title: String {
         switch self {
         case .new: "neu"

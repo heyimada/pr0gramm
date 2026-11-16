@@ -105,18 +105,17 @@ private struct TabStack: View {
     var body: some View {
         RoutedStack(router: app.routers[tab]!) {
             Group {
-                if let stream = tab.stream {
-                    StreamFeed(stream: stream)
-                } else {
-                    switch tab {
-                    case .top, .new, .junk, .subscribed: EmptyView()
-                    case .profile: AccountScreen()
-                    case .downloads: DownloadsScreen()
-                    case .home: HomeScreen()
-                    case .feed: StreamsScreen()
-                    case .reels: ReelsScreen()
-                    case .search: SearchScreen()
-                    }
+                switch tab {
+                case .top: StreamFeed(stream: .top)
+                case .new: StreamFeed(stream: .new)
+                case .junk: StreamFeed(stream: .junk)
+                case .subscribed: StreamFeed(stream: .subscribed)
+                case .profile: AccountScreen()
+                case .downloads: DownloadsScreen()
+                case .home: HomeScreen()
+                case .feed: StreamsScreen()
+                case .reels: ReelsScreen()
+                case .search: SearchScreen()
                 }
             }
             #if os(iOS)

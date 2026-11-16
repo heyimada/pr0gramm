@@ -12,10 +12,10 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .top: "Beliebt"
-        case .new: "Neu"
-        case .junk: "Müll"
-        case .subscribed: "Abos"
+        case .top: FeedStream.top.title.capitalized
+        case .new: FeedStream.new.title.capitalized
+        case .junk: FeedStream.junk.title.capitalized
+        case .subscribed: FeedStream.subscribed.title.capitalized
         case .home: "Start"
         case .feed: "Feed"
         case .reels: "Reels"
@@ -105,7 +105,7 @@ final class AppState {
 
     /// "Abos" needs an account, so it's left out while logged out.
     func visibleTabs(isLoggedIn: Bool) -> [AppTab] {
-        let tabs = tabOrder.filter { $0 != .subscribed || isLoggedIn }
+        let tabs = tabOrder.filter { isLoggedIn || $0.stream?.requiresLogin != true }
         return tabs.isEmpty ? [.top] : tabs
     }
 }
