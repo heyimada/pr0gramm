@@ -6,13 +6,14 @@ struct Pr0grammApp: App {
     @State private var session: Session
     @State private var library: FeedLibrary
     @State private var playback: PlaybackSettings
-    @State private var app = AppState()
+    @State private var app: AppState
     @State private var downloads = DownloadStore()
 
     init() {
         let session = Session()
         _session = State(initialValue: session)
         _playback = State(initialValue: PlaybackSettings())
+        _app = State(initialValue: AppState(session: session))
         _library = State(initialValue: FeedLibrary(session: session))
         // Thumbnails and images are loaded through URLSession.shared (AsyncImage); give it room to cache.
         URLCache.shared = URLCache(memoryCapacity: 64 << 20, diskCapacity: 512 << 20)

@@ -271,7 +271,7 @@ struct VoteCapsule: View {
     private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
         let active = current == value
         return Button {
-            Task { await app.toggleVote(.item, id: item.id, value, in: session) }
+            Task { await app.toggleVote(.item, id: item.id, value) }
         } label: {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .bold))

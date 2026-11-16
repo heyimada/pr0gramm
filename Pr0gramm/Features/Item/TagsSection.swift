@@ -51,6 +51,6 @@ private struct TagPill: View {
     }
 
     private func cast(_ value: Int) {
-        Task { await app.toggleVote(.tag, id: tag.id, value, in: session) }
+        Task { await app.toggleVote(.tag, id: tag.id, value) }
     }
 }

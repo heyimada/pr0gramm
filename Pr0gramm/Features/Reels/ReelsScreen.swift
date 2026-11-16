@@ -371,7 +371,7 @@ private struct ReelPage: View {
     }
 
     private func cast(_ value: Int) {
-        Task { await app.toggleVote(.item, id: item.id, value, in: session) }
+        Task { await app.toggleVote(.item, id: item.id, value) }
     }
 }
 

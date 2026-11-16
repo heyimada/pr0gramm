@@ -71,7 +71,7 @@ final class AppState {
     var tab: AppTab
     var showsLogin = false
     var showsSettings = false
-    var showsVoteFailure = false
+    var voteFailure: Error?
 
     var tabOrder: [AppTab] {
         didSet { UserDefaults.standard.set(tabOrder.map(\.rawValue), forKey: Self.tabOrderKey) }
@@ -84,19 +84,22 @@ final class AppState {
 
     var router: Router { routers[tab]! }
 
-    init() {
+    private let session: Session
+
+    init(session: Session) {
+        self.session = session
         let stored = (UserDefaults.standard.stringArray(forKey: Self.tabOrderKey) ?? []).compactMap(AppTab.init(rawValue:))
         let order = stored.isEmpty ? AppTab.defaultOrder : stored
         tab = order.first ?? .top
         tabOrder = order
     }
 
-    func toggleVote(_ target: VoteTarget, id: Int, _ value: Int, in session: Session) async {
+    func toggleVote(_ target: VoteTarget, id: Int, _ value: Int) async {
         guard session.isLoggedIn else { return showsLogin = true }
         do {
             try await session.toggleVote(target, id: id, value)
         } catch {
-            showsVoteFailure = true
+            voteFailure = error
         }
     }
 

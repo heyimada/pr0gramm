@@ -222,7 +222,7 @@ struct VoteButtons: View {
     private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
         let active = current == value
         return Button {
-            Task { await app.toggleVote(target, id: id, value, in: session) }
+            Task { await app.toggleVote(target, id: id, value) }
         } label: {
             Image(systemName: active ? "\(symbol).fill" : symbol)
                 .resizable()

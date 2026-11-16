@@ -16,7 +16,14 @@ private struct AppPresentations: ViewModifier {
         @Bindable var app = app
         content
             .sheet(isPresented: $app.showsLogin) { LoginView() }
-            .alert("Abstimmen fehlgeschlagen", isPresented: $app.showsVoteFailure) {}
+            .alert(
+                "Abstimmen fehlgeschlagen",
+                isPresented: Binding(get: { app.voteFailure != nil }, set: { if !$0 { app.voteFailure = nil } })
+            ) {
+                Button("OK") {}
+            } message: {
+                Text(app.voteFailure?.localizedDescription ?? "")
+            }
             .alert(
                 downloads.failure?.title ?? "",
                 isPresented: Binding(get: { downloads.failure != nil }, set: { if !$0 { downloads.dismissFailure() } })
