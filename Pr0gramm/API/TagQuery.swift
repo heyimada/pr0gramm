@@ -13,5 +13,10 @@ struct TagQuery {
         body = text.trimmingCharacters(in: .whitespaces)
     }
 
+    /// Excluding tags only works in the extended syntax.
+    static func needsExtended(_ words: [String]) -> Bool {
+        words.contains { $0.hasPrefix("-") }
+    }
+
     var words: [String] { body.split(whereSeparator: \.isWhitespace).map(String.init) }
 }

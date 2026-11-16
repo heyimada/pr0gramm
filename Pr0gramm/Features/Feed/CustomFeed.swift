@@ -20,9 +20,8 @@ struct CustomFeed: Codable, Hashable, Identifiable {
 
     var query: FeedQuery {
         let tags = tags.trimmingCharacters(in: .whitespaces)
-        // Excluding tags only works in the extended syntax, which starts with "!".
         let parsed = TagQuery(tags)
-        let needsExtended = !parsed.isExtended && parsed.words.contains { $0.hasPrefix("-") }
+        let needsExtended = !parsed.isExtended && TagQuery.needsExtended(parsed.words)
         return FeedQuery(stream: stream, tags: needsExtended ? "! " + tags : tags)
     }
 

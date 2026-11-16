@@ -43,7 +43,7 @@ struct SearchOptions {
 
         let terms = text.words + advanced
         guard !terms.isEmpty else { return nil }
-        let tags = (text.isExtended || !advanced.isEmpty ? "! " : "") + terms.joined(separator: " ")
+        let tags = (text.isExtended || !advanced.isEmpty || TagQuery.needsExtended(text.words) ? "! " : "") + terms.joined(separator: " ")
         return FeedQuery(stream: stream, tags: tags)
     }
 }
