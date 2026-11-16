@@ -5,11 +5,12 @@ struct HomeScreen: View {
     @State private var cache = FeedCache()
     @State private var selection: FeedSource?
 
-    private func ranked(_ feed: FeedModel) -> [FeedItem] {
+    private func ranked(_ feed: FeedModel) -> (items: [FeedItem], isToday: Bool) {
         let cutoff = Date(timeIntervalSinceNow: -86_400)
         let visible = feed.items.filter { !$0.createdAt.isScoreHidden }
         let today = visible.filter { $0.createdAt > cutoff }
-        return (today.count >= 5 ? today : visible).sorted { $0.score > $1.score }
+        let isToday = today.count >= 5
+        return ((isToday ? today : visible).sorted { $0.score > $1.score }, isToday)
     }
 
     private var sources: [FeedSource] {
@@ -37,7 +38,8 @@ struct HomeScreen: View {
     var body: some View {
         let query = library.query(for: source)
         let feed = cache.model(for: query)
-        let top = Array(ranked(feed).prefix(11))
+        let (rankedItems, isToday) = ranked(feed)
+        let top = Array(rankedItems.prefix(11))
         let topModel = FeedModel(items: top, query: query)
         FeedGrid(model: feed, showsBackground: false) {
             VStack(alignment: .leading, spacing: 28) {
@@ -46,10 +48,10 @@ struct HomeScreen: View {
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 16)
                 if let hero = top.first {
-                    HeroCard(item: hero, route: .pager(PagerRoute(model: topModel, itemID: hero.id, transitionNamespace: nil)))
+                    HeroCard(item: hero, isToday: isToday, route: .pager(PagerRoute(model: topModel, itemID: hero.id, transitionNamespace: nil)))
                         .id(hero.id)
                     if top.count > 1 {
-                        TopRail(items: Array(top.dropFirst()), model: topModel)
+                        TopRail(items: Array(top.dropFirst()), isToday: isToday, model: topModel)
                     }
                     SectionTitle(kicker: sectionKicker, title: sectionTitle)
                 }
@@ -102,12 +104,14 @@ private struct HeroCard: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(PlaybackSettings.self) private var playback
     let item: FeedItem
+    let isToday: Bool
     let route: Route
     @State private var details: ItemDetails
     @State private var looping: LoopingPlayer?
 
-    init(item: FeedItem, route: Route) {
+    init(item: FeedItem, isToday: Bool, route: Route) {
         self.item = item
+        self.isToday = isToday
         self.route = route
         _details = State(initialValue: ItemDetails(itemID: item.id))
     }
@@ -168,7 +172,7 @@ private struct HeroCard: View {
 
     private var caption: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Nr. 1 heute".uppercased())
+            Text((isToday ? "Nr. 1 heute" : "Nr. 1").uppercased())
                 .font(.caption.weight(.bold))
                 .tracking(2)
                 .foregroundStyle(Color.pr0Orange)
@@ -214,11 +218,12 @@ private struct HeroCard: View {
 
 private struct TopRail: View {
     let items: [FeedItem]
+    let isToday: Bool
     let model: FeedModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(kicker: "Trending", title: "Top 10 heute")
+            SectionTitle(kicker: "Trending", title: isToday ? "Top 10 heute" : "Top 10")
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
