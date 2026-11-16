@@ -20,12 +20,12 @@ F2. One list of switchable content filters on `ContentFlags` (flag, title, subti
   - `MainToolbar.swift:75` and `SettingsView.swift:83` copy the same insert/remove binding.
   - `Models.swift:14` ContentFlags.badge is dead; `nsfp` only used by it.
 
-F3. Feed selection resolved in one place: `AppState.query(for:)` non-optional (falls back to .top), `AppState.currentSource(picked:in:)`; a `FeedPager` view owns the paging ScrollView + FeedPaging used by Feed tab and Reels.
+F3. Feed selection resolved in one place: a `FeedLibrary` (custom feeds, default feed, Face ID lock, `query(for:)` non-optional, `sources(withSubscriptions:)`, `currentSource(picked:in:)`) replaces the feed half of AppState; a `FeedPager` view owns the paging ScrollView used by Feed tab and Reels.
   - `Feed/FeedScreen.swift:175`, `Home/HomeScreen.swift:24`, `Reels/ReelsScreen.swift:19` each re-implement `selection ?? default`, `contains ? : .top`.
   - `app.query(for:) ?? .top` at 4 call sites + defaultQuery.
   - `FeedScreen.swift:184` and `ReelsScreen.swift:28` duplicate GeometryReader+horizontal paging HStack+FeedPaging.
 
-F4. One `VoteButton` primitive (login gate, toggle-to-0, haptic, a11y, failure alert) used by all vote UIs; Session stores votes as `[VoteTarget: [Int: Int]]` (same persisted format).
+F4. One vote action, `AppState.toggleVote` (login gate, toggle-to-0, one failure alert), shared by all vote UIs; Session stores votes as `[VoteTarget: [Int: Int]]` (same persisted format).
   - `Shared/Components.swift:110`, `Item/ItemDetailView.swift:316`, `Item/TagsSection.swift:66`, `Reels/ReelsScreen.swift:418` each gate login, toggle, and handle errors differently (two alert, two swallow).
   - `API/Session.swift:113,140,168,185` four switches over item/comment/tag dictionaries.
 
@@ -42,7 +42,7 @@ F6. Site URLs in one place (`API/Site.swift`): origin, api base, post link, user
 F7. `Route.tag(String)` resolved by RouteDestination with the default stream.
   - `TagsSection.swift:41` and `ReelsScreen.swift:345` both build FeedQuery(stream: app.defaultStream, tags:).
 
-F8. Persisted settings persist themselves (didSet) via one UserDefaults Codable helper; ReelsFilter moves onto AppState.
+F8. Persisted settings persist themselves (didSet) via one UserDefaults Codable helper; the Reels filter lives in a self-persisting `ReelsFilterStore` in Features/Reels.
   - `ReelsScreen.swift:63` must remember `.onChange(of: filter) { filter.save() }` (call-order convention).
   - encode/decode boilerplate in AppState x4, Session votes, ReelsFilter load/save.
   - onFilter(String, Bool) closure threaded ReelsScreen→ReelsFeed→ReelPage only to reach the filter.
@@ -67,9 +67,9 @@ F11. Surplus: delete pass-throughs, never-varied injection, dead fields.
 
 F12. Caller-specific parameters / special cases.
   - `FilterMenu.plain` exists only for Reels → FilterMenu takes its label.
-  - ItemPagerView/SingleItemScreen measure pageSize for ItemDetailView → it measures itself.
+  - ItemPagerView/SingleItemScreen measure pageSize for ItemDetailView → kept (not done; low value).
   - ReelsFeed `.task(id: "\(tags)-\(stream)-\(flags)")` + `if model.query != query { rebuild }` → identity by `.id(query)`.
-  - TabStack `tab.stream!` force unwrap.
+  - TabStack `tab.stream!` force unwrap (done in wave C).
 
 ## Kept on purpose (system needs them)
   - FeedModel.loadMore swallows paging errors (next scroll retries).
@@ -77,9 +77,26 @@ F12. Caller-specific parameters / special cases.
   - CustomFeed custom decoder (old saved data), `tabOrder.v2`, NavigationSettings shownID/hiddenID (SwiftUI identity quirk).
   - SingleItemScreen loads via `.new` + `around` (API quirk).
   - FeedGrid.showsBackground, SegmentCapsule.glassNamespace (glass morph needs ID on the inner glass).
-  - Video prefs on Session: small, leave.
+  - Video prefs: moved to `PlaybackSettings` after the first sweep.
+
+## Added during the run
+  - Pager fix (user report): `pagePosition` re-anchors Reels, Feed tab and post pager on size changes.
+  - Reels show posts whole by default, Settings toggle and tolerance slider (user request).
+  - Sweep 1 → wave C (PlaybackSettings, FeedLibrary mutations, moves, one vote alert, one tag-syntax rule, surplus) and eight bug fixes the user approved.
+  - Review 1 → crash, score, draft, sheet alerts, reload race fixed in 25fc918 and f96a4c3.
+
+## Declined sweep findings (and why)
+  - Pass flags into FeedLibrary instead of Session: the library's answers depend on login and filters by definition; threading them back through every caller re-creates the problem F3 fixed.
+  - FeedSwitcher model for the three switcher screens: one call each now (`currentSource`); a model would add a layer for three lines.
+  - VideoPlayer creation policy object: the four players have different, deliberate lifecycles (pool, page, hero, window).
+  - Safe-area inset plumbing unified: three layouts need different inset behavior (margins, padding, pager pages).
+  - FeedModel holding Session to page by itself: it would make the model read app state it doesn't own.
+  - `step` closure → previous/next, `FeedQuery.title` "Suche", `onScroll`/`showsBackground` parameters: cosmetic.
+  - Default-feed fallback inconsistency (deleted → beliebt, un-marked → own stream): product rule, kept as is.
+  - Score display residuals: a refresh after voting in the same run, and a sync that lands after a post was first shown, can still be off by your vote.
 
 ## Verification
-  - Pin: `scripts/verify/` equivalence harness of pure logic (tag queries, routes, comment threading, vote log, feed visibility), baseline recorded before any change.
-  - Build iOS + visionOS.
-  - E2E smoke on iPhone Duo simulator, screenshots before/after.
+  - Pin: `scripts/verify/pin.sh` (pure logic, saved-data formats), baseline from the original code, extended after review.
+  - Upgrade: `scripts/verify/upgrade-seed.sh` + `upgrade-probe.sh`; original build vs HEAD over the same data, outputs in `scripts/verify/upgrade/`.
+  - Smoke: `scripts/verify/smoke.sh` on the iPhone Duo, output in `scripts/verify/smoke.out.txt`.
+  - Builds: iOS + visionOS after every commit.
