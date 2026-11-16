@@ -61,7 +61,7 @@ final class VideoPlayback {
 }
 
 struct LoopingVideoView: View {
-    @Environment(Session.self) private var session
+    @Environment(PlaybackSettings.self) private var playbackSettings
     let item: FeedItem
     let isActive: Bool
     let playback: VideoPlayback
@@ -93,13 +93,13 @@ struct LoopingVideoView: View {
     }
 
     private func update() {
-        guard isActive, session.autoplayVideos || playback.userStarted else {
+        guard isActive, playbackSettings.autoplayVideos || playback.userStarted else {
             playback.looping?.player.pause()
             if !isActive { playback.stop() }
             return
         }
         if playback.looping == nil {
-            playback.looping = LoopingPlayer(url: item.mediaURL, muted: session.startMuted && !playback.userStarted)
+            playback.looping = LoopingPlayer(url: item.mediaURL, muted: playbackSettings.startMuted && !playback.userStarted)
         }
         playback.looping?.player.play()
     }

@@ -189,6 +189,7 @@ private struct ReelsFeed: View {
 
 private struct ReelPage: View {
     @Environment(Session.self) private var session
+    @Environment(PlaybackSettings.self) private var playback
     @Environment(AppState.self) private var app
     @Environment(ReelsFilterStore.self) private var store
     let item: FeedItem
@@ -238,7 +239,7 @@ private struct ReelPage: View {
         GeometryReader { proxy in
             let fill = max(proxy.size.width / CGFloat(max(item.width, 1)), proxy.size.height / CGFloat(max(item.height, 1)))
             let fit = min(proxy.size.width / CGFloat(max(item.width, 1)), proxy.size.height / CGFloat(max(item.height, 1)))
-            let fillsScreen = !session.reelsShowWhole || 1 - fit / fill <= session.reelsFillTolerance
+            let fillsScreen = !playback.reelsShowWhole || 1 - fit / fill <= playback.reelsFillTolerance
             // Laid out at fill size and scaled down, so the video layer animates as one transform.
             Group {
                 if item.isVideo {
@@ -265,14 +266,14 @@ private struct ReelPage: View {
                     pinch = min(max(value.magnification, 0.6), 1.5)
                 }
                 .onEnded { value in
-                    if value.magnification < 0.95 { session.reelsShowWhole = true }
-                    if value.magnification > 1.05 { session.reelsShowWhole = false }
+                    if value.magnification < 0.95 { playback.reelsShowWhole = true }
+                    if value.magnification > 1.05 { playback.reelsShowWhole = false }
                 }
         )
-        .animation(.spring(duration: 0.35, bounce: 0.2), value: session.reelsShowWhole)
+        .animation(.spring(duration: 0.35, bounce: 0.2), value: playback.reelsShowWhole)
         .animation(.interactiveSpring, value: pinch)
         .accessibilityLabel(item.isVideo ? "Video von \(item.user)" : "Bild von \(item.user)")
-        .accessibilityAction(named: session.reelsShowWhole ? "Bildschirm füllen" : "Ganz anzeigen") { session.reelsShowWhole.toggle() }
+        .accessibilityAction(named: playback.reelsShowWhole ? "Bildschirm füllen" : "Ganz anzeigen") { playback.reelsShowWhole.toggle() }
     }
 
     private var caption: some View {

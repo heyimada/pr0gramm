@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(Session.self) private var session
+    @Environment(PlaybackSettings.self) private var playback
     @Environment(DownloadStore.self) private var downloads
     @Environment(FeedLibrary.self) private var library
     @Environment(\.dismiss) private var dismiss
@@ -9,6 +10,7 @@ struct SettingsView: View {
 
     var body: some View {
         @Bindable var session = session
+        @Bindable var playback = playback
         NavigationStack {
             Form {
                 Section {
@@ -49,20 +51,20 @@ struct SettingsView: View {
                 .disabled(!session.isLoggedIn)
 
                 Section("Videos") {
-                    Toggle("Automatisch abspielen", isOn: $session.autoplayVideos)
-                    Toggle("Stumm starten", isOn: $session.startMuted)
+                    Toggle("Automatisch abspielen", isOn: $playback.autoplayVideos)
+                    Toggle("Stumm starten", isOn: $playback.startMuted)
                 }
 
                 Section {
-                    Toggle(isOn: $session.reelsShowWhole.animation()) {
+                    Toggle(isOn: $playback.reelsShowWhole.animation()) {
                         Text("Ganz anzeigen")
                         Text("Mit Rändern statt beschnitten. Aufziehen füllt den Bildschirm, zusammenziehen zeigt wieder alles.")
                     }
-                    if session.reelsShowWhole {
+                    if playback.reelsShowWhole {
                         LabeledContent("Trotzdem füllen bis") {
-                            Text("\(Int((session.reelsFillTolerance * 100).rounded())) % beschnitten").monospacedDigit()
+                            Text("\(Int((playback.reelsFillTolerance * 100).rounded())) % beschnitten").monospacedDigit()
                         }
-                        Slider(value: $session.reelsFillTolerance, in: 0...0.3, step: 0.01)
+                        Slider(value: $playback.reelsFillTolerance, in: PlaybackSettings.fillToleranceRange, step: 0.01)
                     }
                 } header: {
                     Text("Reels")

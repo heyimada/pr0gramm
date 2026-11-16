@@ -185,7 +185,7 @@ show("votes", [session.vote(for: .item, id: 1), session.vote(for: .item, id: 2),
                session.vote(for: .tag, id: 4), session.vote(for: .item, id: 3), session.vote(for: .tag, id: 1)])
 show("guest flags", session.flags.rawValue)
 show("selected flags", session.selectedFlags.rawValue)
-show("autoplay/muted/resets", [session.autoplayVideos, session.startMuted, session.resetsFlagsOnLaunch])
+show("autoplay/muted/resets", [PlaybackSettings(defaults: votesDefaults).autoplayVideos, PlaybackSettings(defaults: votesDefaults).startMuted, session.resetsFlagsOnLaunch])
 votesDefaults.set(true, forKey: "resetsFlagsOnLaunch")
 show("selected flags after reset-on-launch", Session(defaults: votesDefaults).selectedFlags.rawValue)
 votesDefaults.removePersistentDomain(forName: votesSuite)
