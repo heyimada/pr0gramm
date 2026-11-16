@@ -71,6 +71,7 @@ final class AppState {
     var tab: AppTab
     var showsLogin = false
     var showsSettings = false
+    var showsVoteFailure = false
 
     var tabOrder: [AppTab] {
         didSet { UserDefaults.standard.set(tabOrder.map(\.rawValue), forKey: Self.tabOrderKey) }
@@ -90,9 +91,13 @@ final class AppState {
         tabOrder = order
     }
 
-    func toggleVote(_ target: VoteTarget, id: Int, _ value: Int, in session: Session) async throws {
+    func toggleVote(_ target: VoteTarget, id: Int, _ value: Int, in session: Session) async {
         guard session.isLoggedIn else { return showsLogin = true }
-        try await session.toggleVote(target, id: id, value)
+        do {
+            try await session.toggleVote(target, id: id, value)
+        } catch {
+            showsVoteFailure = true
+        }
     }
 
     /// "Abos" needs an account, so it's left out while logged out.

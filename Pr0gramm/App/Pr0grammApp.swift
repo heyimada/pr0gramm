@@ -84,6 +84,7 @@ struct RootView: View {
         }
         .sheet(isPresented: $app.showsLogin) { LoginView() }
         .sheet(isPresented: $app.showsSettings) { SettingsView() }
+        .alert("Abstimmen fehlgeschlagen", isPresented: $app.showsVoteFailure) {}
         .task { await session.sync() }
         .onChange(of: scenePhase) {
             // Protected feeds need Face ID again after leaving the app.

@@ -206,23 +206,18 @@ struct VoteButtons: View {
     let id: Int
     var size: CGFloat = 20
 
-    @State private var failed = false
-
     var body: some View {
         let vote = session.vote(for: target, id: id)
         VStack(spacing: size * 0.3) {
             button(value: 1, current: vote, symbol: "plus.circle", label: "Plus")
             button(value: -1, current: vote, symbol: "minus.circle", label: "Minus")
         }
-        .alert("Abstimmen fehlgeschlagen", isPresented: $failed) {}
     }
 
     private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
         let active = current == value
         return Button {
-            Task {
-                do { try await app.toggleVote(target, id: id, value, in: session) } catch { failed = true }
-            }
+            Task { await app.toggleVote(target, id: id, value, in: session) }
         } label: {
             Image(systemName: active ? "\(symbol).fill" : symbol)
                 .resizable()

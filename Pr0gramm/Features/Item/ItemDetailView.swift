@@ -244,8 +244,6 @@ struct VoteCapsule: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     let item: FeedItem
-    @State private var failed = false
-
     var body: some View {
         let vote = session.vote(for: .item, id: item.id)
         HStack(spacing: 0) {
@@ -259,15 +257,12 @@ struct VoteCapsule: View {
         .frame(height: 38)
         .background(Color.pr0Pill, in: .capsule)
         .animation(.snappy, value: vote)
-        .alert("Abstimmen fehlgeschlagen", isPresented: $failed) {}
     }
 
     private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
         let active = current == value
         return Button {
-            Task {
-                do { try await app.toggleVote(.item, id: item.id, value, in: session) } catch { failed = true }
-            }
+            Task { await app.toggleVote(.item, id: item.id, value, in: session) }
         } label: {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .bold))
