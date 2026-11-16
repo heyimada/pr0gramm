@@ -6,12 +6,6 @@ struct DownloadsScreen: View {
     @Environment(DownloadStore.self) private var store
     @Environment(\.horizontalSizeClass) private var sizeClass
 
-    private var columns: [GridItem] {
-        sizeClass == .compact
-            ? Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
-            : [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 2)]
-    }
-
     var body: some View {
         ScrollView {
             if store.downloads.isEmpty {
@@ -19,7 +13,7 @@ struct DownloadsScreen: View {
                                        description: Text("Tippe bei einem Post auf ↓, um ihn offline zu speichern."))
                     .padding(.top, 120)
             } else {
-                LazyVGrid(columns: columns, spacing: 2) {
+                LazyVGrid(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact, spacing: 2), spacing: 2) {
                     ForEach(store.downloads) { download in
                         NavigationLink(value: Route.download(download.id)) {
                             ThumbnailView(item: download.item)

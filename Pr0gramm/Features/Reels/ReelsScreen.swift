@@ -174,19 +174,7 @@ private struct ReelsFeed: View {
             .scrollIndicators(.hidden)
         }
         .ignoresSafeArea()
-        .overlay {
-            if model.items.isEmpty {
-                Group {
-                    if let error = model.error {
-                        ErrorView(error: error) { await model.reload(flags: session.flags) }
-                    } else if model.atEnd {
-                        ContentUnavailableView("Nichts gefunden", systemImage: "play.slash")
-                    } else {
-                        ProgressView()
-                    }
-                }
-            }
-        }
+        .overlay { FeedStatus(model: model, emptySymbol: "play.slash") }
         .task(id: session.flags) {
             await model.loadIfNeeded(flags: session.flags)
             if currentID == nil || !model.items.contains(where: { $0.id == currentID }) {

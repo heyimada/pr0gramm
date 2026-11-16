@@ -16,20 +16,11 @@ struct FeedGrid<Header: View>: View {
     private static var spacing: CGFloat { 2 }
     #endif
 
-    /// Three columns on phones like pr0.app; more on wider screens.
-    private var columns: [GridItem] {
-        if sizeClass == .compact {
-            Array(repeating: GridItem(.flexible(), spacing: Self.spacing), count: 3)
-        } else {
-            [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: Self.spacing)]
-        }
-    }
-
     var body: some View {
         ScrollView {
             header
 
-            LazyVGrid(columns: columns, spacing: Self.spacing) {
+            LazyVGrid(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact, spacing: Self.spacing), spacing: Self.spacing) {
                 ForEach(model.items) { item in
                     NavigationLink(value: Route.pager(PagerRoute(model: model, itemID: item.id, transitionNamespace: namespace))) {
                         ThumbnailView(item: item)
@@ -53,18 +44,7 @@ struct FeedGrid<Header: View>: View {
             }
 
             // Inline rather than an overlay so a header (e.g. on profiles) stays visible.
-            if model.items.isEmpty {
-                Group {
-                    if let error = model.error {
-                        ErrorView(error: error) { await model.reload(flags: session.flags) }
-                    } else if !model.atEnd {
-                        ProgressView()
-                    } else {
-                        ContentUnavailableView("Nichts gefunden", systemImage: "magnifyingglass")
-                    }
-                }
-                .padding(.top, 100)
-            }
+            FeedStatus(model: model, emptySymbol: "magnifyingglass", topInset: 100)
         }
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
             onScroll?(offset)
@@ -72,6 +52,30 @@ struct FeedGrid<Header: View>: View {
         .refreshable { await model.reload(flags: session.flags) }
         .task(id: session.flags) { await model.loadIfNeeded(flags: session.flags) }
         .background(showsBackground ? Color.pr0Background : .clear)
+    }
+}
+
+/// What a feed with no posts shows: the error with a retry, a spinner while loading, else a note.
+struct FeedStatus: View {
+    @Environment(Session.self) private var session
+    let model: FeedModel
+    let emptySymbol: String
+    /// Applied only while the status is showing, so a populated feed gains no space.
+    var topInset: CGFloat = 0
+
+    var body: some View {
+        if model.items.isEmpty {
+            Group {
+                if let error = model.error {
+                    ErrorView(error: error) { await model.reload(flags: session.flags) }
+                } else if !model.atEnd {
+                    ProgressView()
+                } else {
+                    ContentUnavailableView("Nichts gefunden", systemImage: emptySymbol)
+                }
+            }
+            .padding(.top, topInset)
+        }
     }
 }
 

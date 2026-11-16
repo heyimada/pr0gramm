@@ -3,6 +3,13 @@ import SwiftUI
 struct ThumbnailView: View {
     let item: FeedItem
 
+    /// Three columns on phones like pr0.app; more on wider screens.
+    static func thumbnailColumns(compact: Bool, spacing: CGFloat) -> [GridItem] {
+        compact
+            ? Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3)
+            : [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: spacing)]
+    }
+
     var body: some View {
         Color.pr0Pill
             .aspectRatio(1, contentMode: .fit)
