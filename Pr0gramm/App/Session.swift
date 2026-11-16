@@ -28,6 +28,17 @@ final class Session {
         didSet { defaults.set(startMuted, forKey: Keys.muted) }
     }
 
+    /// Reels show posts whole, with bars, unless filling the screen would cut off at most
+    /// `reelsFillTolerance` of them. Off, reels always fill. Pinching a reel flips it.
+    var reelsShowWhole: Bool {
+        didSet { defaults.set(reelsShowWhole, forKey: Keys.reelsShowWhole) }
+    }
+
+    /// Share of a post, 0...0.3, that may be cut off to fill the screen while `reelsShowWhole` is on.
+    var reelsFillTolerance: Double {
+        didSet { defaults.set(reelsFillTolerance, forKey: Keys.reelsFillTolerance) }
+    }
+
     private(set) var votes: [VoteTarget: [Int: Int]] = [:]
 
     private let defaults: UserDefaults
@@ -45,6 +56,8 @@ final class Session {
             : ContentFlags(rawValue: defaults.object(forKey: Keys.flags) as? Int ?? ContentFlags.sfw.rawValue)
         autoplayVideos = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
         startMuted = defaults.object(forKey: Keys.muted) as? Bool ?? true
+        reelsShowWhole = defaults.object(forKey: Keys.reelsShowWhole) as? Bool ?? true
+        reelsFillTolerance = defaults.object(forKey: Keys.reelsFillTolerance) as? Double ?? 0.1
         syncOffset = defaults.integer(forKey: Keys.syncOffset)
         loadVotes()
         refreshFromCookie()
@@ -194,6 +207,8 @@ final class Session {
         static let resetsFlags = "resetsFlagsOnLaunch"
         static let autoplay = "autoplayVideos"
         static let muted = "startMuted"
+        static let reelsShowWhole = "reelsShowWhole"
+        static let reelsFillTolerance = "reelsFillTolerance"
         static let votes = "votes"
         static let syncOffset = "syncOffset"
     }

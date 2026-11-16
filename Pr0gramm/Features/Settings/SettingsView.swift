@@ -53,6 +53,23 @@ struct SettingsView: View {
                     Toggle("Stumm starten", isOn: $session.startMuted)
                 }
 
+                Section {
+                    Toggle(isOn: $session.reelsShowWhole.animation()) {
+                        Text("Ganz anzeigen")
+                        Text("Mit Rändern statt beschnitten. Aufziehen füllt den Bildschirm, zusammenziehen zeigt wieder alles.")
+                    }
+                    if session.reelsShowWhole {
+                        LabeledContent("Trotzdem füllen bis") {
+                            Text("\(Int((session.reelsFillTolerance * 100).rounded())) % beschnitten").monospacedDigit()
+                        }
+                        Slider(value: $session.reelsFillTolerance, in: 0...0.3, step: 0.01)
+                    }
+                } header: {
+                    Text("Reels")
+                } footer: {
+                    Text("Passt ein Post fast genau auf den Bildschirm, füllt er ihn trotzdem, solange höchstens so viel abgeschnitten wird.")
+                }
+
                 Section("Downloads") {
                     LabeledContent("Belegt", value: ByteCountFormatter.string(fromByteCount: downloads.totalBytes, countStyle: .file))
                     Button("Alle Downloads löschen", role: .destructive) { confirmsDeleteAll = true }

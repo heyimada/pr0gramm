@@ -204,7 +204,6 @@ private struct ReelPage: View {
 
     @State private var details: ItemDetails
     @State private var showsComments = false
-    @AppStorage("reelsFitMedia") private var fitsMedia = false
     @GestureState private var pinch: CGFloat = 1
 
     init(item: FeedItem, isActive: Bool, pool: ReelPlayerPool, insets: EdgeInsets) {
@@ -241,12 +240,11 @@ private struct ReelPage: View {
         }
     }
 
-    /// Media fills the screen by default; pinching in shows it whole at its own aspect ratio,
-    /// pinching out fills again. Remembered across reels.
     private var media: some View {
         GeometryReader { proxy in
             let fill = max(proxy.size.width / CGFloat(max(item.width, 1)), proxy.size.height / CGFloat(max(item.height, 1)))
             let fit = min(proxy.size.width / CGFloat(max(item.width, 1)), proxy.size.height / CGFloat(max(item.height, 1)))
+            let fillsScreen = !session.reelsShowWhole || 1 - fit / fill <= session.reelsFillTolerance
             // Laid out at fill size and scaled down, so the video layer animates as one transform.
             Group {
                 if item.isVideo {
@@ -256,7 +254,7 @@ private struct ReelPage: View {
                 }
             }
             .frame(width: CGFloat(item.width) * fill, height: CGFloat(item.height) * fill)
-            .scaleEffect((fitsMedia ? fit / fill : 1) * pinch)
+            .scaleEffect((fillsScreen ? 1 : fit / fill) * pinch)
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .background {
@@ -273,14 +271,14 @@ private struct ReelPage: View {
                     pinch = min(max(value.magnification, 0.6), 1.5)
                 }
                 .onEnded { value in
-                    if value.magnification < 0.95 { fitsMedia = true }
-                    if value.magnification > 1.05 { fitsMedia = false }
+                    if value.magnification < 0.95 { session.reelsShowWhole = true }
+                    if value.magnification > 1.05 { session.reelsShowWhole = false }
                 }
         )
-        .animation(.spring(duration: 0.35, bounce: 0.2), value: fitsMedia)
+        .animation(.spring(duration: 0.35, bounce: 0.2), value: session.reelsShowWhole)
         .animation(.interactiveSpring, value: pinch)
         .accessibilityLabel(item.isVideo ? "Video von \(item.user)" : "Bild von \(item.user)")
-        .accessibilityAction(named: fitsMedia ? "Bildschirm füllen" : "Ganz anzeigen") { fitsMedia.toggle() }
+        .accessibilityAction(named: session.reelsShowWhole ? "Bildschirm füllen" : "Ganz anzeigen") { session.reelsShowWhole.toggle() }
     }
 
     private var caption: some View {
