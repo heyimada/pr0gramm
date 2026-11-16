@@ -378,9 +378,10 @@ private struct ReelCommentsSheet: View {
     @Environment(\.dismiss) private var dismiss
     let item: FeedItem
     let details: ItemDetails
+    @State private var sheetRouter = Router()
 
     var body: some View {
-        NavigationStack {
+        RoutedStack(router: sheetRouter) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     if let info = details.info {
@@ -396,7 +397,6 @@ private struct ReelCommentsSheet: View {
             }
             .background(Color.pr0Background)
             .inlineNavigationTitle("Kommentare")
-            .navigationDestination(for: Route.self) { RouteDestination(route: $0) }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig", role: .confirm) { dismiss() }
