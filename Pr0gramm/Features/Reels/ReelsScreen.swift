@@ -170,7 +170,7 @@ private struct ReelsFeed: View {
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $currentID)
+            .pagePosition($currentID)
             .scrollIndicators(.hidden)
         }
         .ignoresSafeArea()

@@ -30,7 +30,7 @@ struct ItemPagerView: View {
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $currentID, anchor: .center)
+            .pagePosition($currentID, anchor: .center)
             .scrollIndicators(.hidden)
             .onGeometryChange(for: CGSize.self, of: \.size) { pageSize = $0 }
             .ignoresSafeArea(edges: .horizontal)
