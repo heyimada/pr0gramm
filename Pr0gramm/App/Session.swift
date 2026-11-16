@@ -28,9 +28,7 @@ final class Session {
         didSet { defaults.set(startMuted, forKey: Keys.muted) }
     }
 
-    private(set) var itemVotes: [Int: Int] = [:]
-    private(set) var commentVotes: [Int: Int] = [:]
-    private(set) var tagVotes: [Int: Int] = [:]
+    private(set) var votes: [VoteTarget: [Int: Int]] = [:]
 
     private let defaults: UserDefaults
     private var syncOffset: Int
@@ -104,9 +102,7 @@ final class Session {
         storage.cookies(for: Site.origin)?.forEach(storage.deleteCookie)
         userName = nil
         userScore = nil
-        itemVotes = [:]
-        commentVotes = [:]
-        tagVotes = [:]
+        votes = [:]
         syncOffset = 0
         saveVotes()
     }
@@ -114,23 +110,24 @@ final class Session {
     // MARK: Votes
 
     func vote(for target: VoteTarget, id: Int) -> Int {
-        switch target {
-        case .item: itemVotes[id] ?? 0
-        case .comment: commentVotes[id] ?? 0
-        case .tag: tagVotes[id] ?? 0
-        }
+        votes[target]?[id] ?? 0
+    }
+
+    /// Casts `value` (-1 or 1), or 0 when that is already the current vote.
+    func toggleVote(_ target: VoteTarget, id: Int, _ value: Int) async throws {
+        try await vote(target, id: id, value: vote(for: target, id: id) == value ? 0 : value)
     }
 
     /// Casts `value` (-1, 0, 1), updating local state optimistically and rolling back on failure.
-    func vote(_ target: VoteTarget, id: Int, value: Int) async throws {
+    private func vote(_ target: VoteTarget, id: Int, value: Int) async throws {
         guard let nonce else { throw APIError.notLoggedIn }
         let previous = vote(for: target, id: id)
-        setVote(target, id: id, value: value)
+        votes[target, default: [:]][id] = value
         do {
             try await APIClient.shared.vote(target, id: id, vote: value, nonce: nonce)
             saveVotes()
         } catch {
-            setVote(target, id: id, value: previous)
+            votes[target, default: [:]][id] = previous
             throw error
         }
     }
@@ -138,14 +135,6 @@ final class Session {
     func postComment(itemId: Int, parentId: Int, text: String) async throws -> [Comment]? {
         guard let nonce else { throw APIError.notLoggedIn }
         return try await APIClient.shared.postComment(itemId: itemId, parentId: parentId, text: text, nonce: nonce).comments
-    }
-
-    private func setVote(_ target: VoteTarget, id: Int, value: Int) {
-        switch target {
-        case .item: itemVotes[id] = value
-        case .comment: commentVotes[id] = value
-        case .tag: tagVotes[id] = value
-        }
     }
 
     /// Pulls the vote log the server keeps for this account, so votes cast elsewhere show up here.
@@ -157,23 +146,26 @@ final class Session {
         userScore = try? await APIClient.shared.profile(userName, flags: flags).user.score
         guard let response = try? await APIClient.shared.sync(offset: syncOffset) else { return }
         if let log = response.log, let data = Data(base64Encoded: log) {
-            let bytes = [UInt8](data)
-            for start in stride(from: 0, to: bytes.count - 4, by: 5) {
-                let id = Int(UInt32(bytes[start]) | UInt32(bytes[start + 1]) << 8
-                    | UInt32(bytes[start + 2]) << 16 | UInt32(bytes[start + 3]) << 24)
-                apply(action: bytes[start + 4], id: id)
+            for entry in Self.votes(fromLog: data) {
+                votes[entry.target, default: [:]][entry.id] = entry.value
             }
         }
         if let length = response.logLength { syncOffset = length }
         saveVotes()
     }
 
-    private func apply(action: UInt8, id: Int) {
-        switch action {
-        case 1...3: itemVotes[id] = Int(action) - 2
-        case 4...6: commentVotes[id] = Int(action) - 5
-        case 7...9: tagVotes[id] = Int(action) - 8
-        default: break
+    static func votes(fromLog data: Data) -> [(target: VoteTarget, id: Int, value: Int)] {
+        let bytes = [UInt8](data)
+        return stride(from: 0, to: bytes.count - 4, by: 5).compactMap { start in
+            let id = Int(UInt32(bytes[start]) | UInt32(bytes[start + 1]) << 8
+                | UInt32(bytes[start + 2]) << 16 | UInt32(bytes[start + 3]) << 24)
+            let action = Int(bytes[start + 4])
+            return switch action {
+            case 1...3: (.item, id, action - 2)
+            case 4...6: (.comment, id, action - 5)
+            case 7...9: (.tag, id, action - 8)
+            default: nil
+            }
         }
     }
 
@@ -188,13 +180,11 @@ final class Session {
     private func loadVotes() {
         guard let data = defaults.data(forKey: Keys.votes),
               let stored = try? JSONDecoder().decode(StoredVotes.self, from: data) else { return }
-        itemVotes = stored.items
-        commentVotes = stored.comments
-        tagVotes = stored.tags
+        votes = [.item: stored.items, .comment: stored.comments, .tag: stored.tags]
     }
 
     private func saveVotes() {
-        let stored = StoredVotes(items: itemVotes, comments: commentVotes, tags: tagVotes)
+        let stored = StoredVotes(items: votes[.item] ?? [:], comments: votes[.comment] ?? [:], tags: votes[.tag] ?? [:])
         defaults.set(try? JSONEncoder().encode(stored), forKey: Keys.votes)
         defaults.set(syncOffset, forKey: Keys.syncOffset)
     }

@@ -128,7 +128,7 @@ final class APIClient {
     }
 }
 
-enum VoteTarget: String {
+enum VoteTarget: String, CaseIterable {
     case item = "items"
     case comment = "comments"
     case tag = "tags"

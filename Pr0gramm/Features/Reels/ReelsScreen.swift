@@ -360,10 +360,10 @@ private struct ReelPage: View {
             .accessibilityLabel("Profil von \(item.user)")
 
             action(vote == 1 ? "plus.circle.fill" : "plus.circle", "Plus", tint: vote == 1 ? .pr0Orange : .white) {
-                cast(vote == 1 ? 0 : 1)
+                cast(1)
             }
             action(vote == -1 ? "minus.circle.fill" : "minus.circle", "Minus", tint: vote == -1 ? .pr0Orange : .white) {
-                cast(vote == -1 ? 0 : -1)
+                cast(-1)
             }
             action("bubble.right.fill", info.map { "\($0.comments.count)" } ?? "Kommentare") {
                 showsComments = true
@@ -398,8 +398,7 @@ private struct ReelPage: View {
     }
 
     private func cast(_ value: Int) {
-        guard session.isLoggedIn else { return app.showsLogin = true }
-        Task { try? await session.vote(.item, id: item.id, value: value) }
+        Task { try? await app.toggleVote(.item, id: item.id, value, in: session) }
     }
 }
 

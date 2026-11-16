@@ -297,9 +297,8 @@ struct VoteCapsule: View {
     private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
         let active = current == value
         return Button {
-            guard session.isLoggedIn else { return app.showsLogin = true }
             Task {
-                do { try await session.vote(.item, id: item.id, value: active ? 0 : value) } catch { failed = true }
+                do { try await app.toggleVote(.item, id: item.id, value, in: session) } catch { failed = true }
             }
         } label: {
             Image(systemName: symbol)

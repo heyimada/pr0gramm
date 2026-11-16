@@ -196,6 +196,12 @@ final class AppState {
     /// Stream that tag feeds and searches start in: the default feed's.
     var defaultStream: FeedStream { defaultQuery.stream }
 
+    /// Casts a vote for the logged-in user, or opens the login when there is none.
+    func toggleVote(_ target: VoteTarget, id: Int, _ value: Int, in session: Session) async throws {
+        guard session.isLoggedIn else { return showsLogin = true }
+        try await session.toggleVote(target, id: id, value)
+    }
+
     /// "Abos" needs an account, so it's left out while logged out.
     func visibleTabs(isLoggedIn: Bool) -> [AppTab] {
         let tabs = tabOrder.filter { $0 != .subscribed || isLoggedIn }

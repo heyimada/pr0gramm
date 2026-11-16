@@ -58,13 +58,12 @@ private struct TagPill: View {
         .hoverEffect()
         #endif
         .contextMenu {
-            Button(vote == 1 ? "Plus entfernen" : "Plus", systemImage: "plus.circle") { cast(vote == 1 ? 0 : 1) }
-            Button(vote == -1 ? "Minus entfernen" : "Minus", systemImage: "minus.circle") { cast(vote == -1 ? 0 : -1) }
+            Button(vote == 1 ? "Plus entfernen" : "Plus", systemImage: "plus.circle") { cast(1) }
+            Button(vote == -1 ? "Minus entfernen" : "Minus", systemImage: "minus.circle") { cast(-1) }
         }
     }
 
     private func cast(_ value: Int) {
-        guard session.isLoggedIn else { return app.showsLogin = true }
-        Task { try? await session.vote(.tag, id: tag.id, value: value) }
+        Task { try? await app.toggleVote(.tag, id: tag.id, value, in: session) }
     }
 }
