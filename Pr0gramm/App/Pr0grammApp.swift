@@ -80,7 +80,6 @@ struct RootView: View {
             }
         }
         #if os(iOS)
-        .tabViewSearchActivation(.searchTabSelection)
         .tabBarMinimizeBehavior(.onScrollDown)
         #else
         .tabViewStyle(.sidebarAdaptable)
