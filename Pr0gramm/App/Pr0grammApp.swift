@@ -87,9 +87,8 @@ struct RootView: View {
         .onChange(of: tabs, initial: true) {
             if !tabs.contains(app.tab), let first = tabs.first { app.tab = first }
         }
-        .sheet(isPresented: $app.showsLogin) { LoginView() }
         .sheet(isPresented: $app.showsSettings) { SettingsView() }
-        .appAlerts()
+        .appPresentations()
         .task { await session.sync() }
         .onChange(of: scenePhase) {
             // Protected feeds need Face ID again after leaving the app.

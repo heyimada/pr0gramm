@@ -405,7 +405,7 @@ private struct ReelCommentsSheet: View {
             }
             .task { await details.loadIfNeeded() }
             .commentComposer(item: item, details: details)
-            .appAlerts()
+            .appPresentations()
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(Color.pr0Background)
