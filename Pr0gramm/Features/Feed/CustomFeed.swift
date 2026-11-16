@@ -26,9 +26,13 @@ struct CustomFeed: Codable, Hashable, Identifiable {
         return FeedQuery(stream: stream, tags: needsExtended ? "! " + tags : tags)
     }
 
+    static func defaultName(forTags tags: String) -> String {
+        TagQuery(tags).body
+    }
+
     init(query: FeedQuery) {
         let tags = query.tags ?? ""
-        self.name = TagQuery(tags).body
+        self.name = Self.defaultName(forTags: tags)
         self.tags = tags
         stream = query.stream
     }

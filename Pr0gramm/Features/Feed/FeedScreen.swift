@@ -57,7 +57,7 @@ struct FeedScreenContent: View {
     private var saveButton: some View {
         Button {
             if let savedFeed {
-                withAnimation { library.customFeeds.removeAll { $0.id == savedFeed.id } }
+                withAnimation { library.remove(savedFeed.id) }
             } else {
                 newFeed = CustomFeed(query: model.query)
             }

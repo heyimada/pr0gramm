@@ -12,7 +12,7 @@ final class FeedLibrary {
         }
     }
 
-    var customFeeds: [CustomFeed] {
+    private(set) var customFeeds: [CustomFeed] {
         didSet {
             UserDefaults.standard.set(try? JSONEncoder().encode(customFeeds), forKey: Self.customFeedsKey)
             if case .custom(let id) = defaultSource, customFeed(id) == nil { defaultSource = .stream(.top) }
@@ -76,6 +76,31 @@ final class FeedLibrary {
     func currentSource(picked: FeedSource?, in sources: [FeedSource]) -> FeedSource {
         let source = picked ?? effectiveDefaultSource
         return sources.contains(source) ? source : .stream(.top)
+    }
+
+    func save(_ feed: CustomFeed, makeDefault: Bool) {
+        if let index = customFeeds.firstIndex(where: { $0.id == feed.id }) {
+            customFeeds[index] = feed
+        } else {
+            customFeeds.append(feed)
+        }
+        if makeDefault {
+            defaultSource = .custom(feed.id)
+        } else if defaultSource == .custom(feed.id) {
+            defaultSource = .stream(feed.stream)
+        }
+    }
+
+    func remove(_ id: CustomFeed.ID) {
+        customFeeds.removeAll { $0.id == id }
+    }
+
+    /// Moves within the shown feeds while locked protected feeds keep their places.
+    func moveAccessible(from offsets: IndexSet, to offset: Int) {
+        var shown = accessibleCustomFeeds
+        shown.move(fromOffsets: offsets, toOffset: offset)
+        var reordered = shown.makeIterator()
+        customFeeds = customFeeds.map { isAccessible($0) ? reordered.next()! : $0 }
     }
 
     // MARK: Protected feeds

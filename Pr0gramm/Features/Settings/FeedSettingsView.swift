@@ -9,17 +9,9 @@ struct FeedSettingsView: View {
         FeedStream.searchable.map(FeedSource.stream) + library.accessibleCustomFeeds.map { .custom($0.id) }
     }
 
-    /// Moves within the shown feeds while locked protected feeds keep their places.
-    private func move(from offsets: IndexSet, to offset: Int) {
-        var shown = library.accessibleCustomFeeds
-        shown.move(fromOffsets: offsets, toOffset: offset)
-        var reordered = shown.makeIterator()
-        library.customFeeds = library.customFeeds.map { library.isAccessible($0) ? reordered.next()! : $0 }
-    }
-
     private func delete(at offsets: IndexSet) {
-        let ids = Set(offsets.map { library.accessibleCustomFeeds[$0].id })
-        library.customFeeds.removeAll { ids.contains($0.id) }
+        let ids = offsets.map { library.accessibleCustomFeeds[$0].id }
+        ids.forEach(library.remove)
     }
 
     var body: some View {
@@ -56,7 +48,7 @@ struct FeedSettingsView: View {
                         }
                     }
                 }
-                .onMove(perform: move)
+                .onMove(perform: library.moveAccessible)
                 .onDelete(perform: delete)
 
                 Button("Feed hinzufügen", systemImage: "plus") { addsFeed = true }
@@ -147,7 +139,7 @@ struct CustomFeedEditor: View {
                 if !isNew {
                     Section {
                         Button("Feed löschen", role: .destructive) {
-                            library.customFeeds.removeAll { $0.id == feed.id }
+                            library.remove(feed.id)
                             dismiss()
                         }
                     }
@@ -172,17 +164,8 @@ struct CustomFeedEditor: View {
     private func save() {
         feed.tags = feed.tags.trimmingCharacters(in: .whitespaces)
         feed.name = feed.name.trimmingCharacters(in: .whitespaces)
-        if feed.name.isEmpty { feed.name = CustomFeed(query: FeedQuery(tags: feed.tags)).name }
-        if let index = library.customFeeds.firstIndex(where: { $0.id == feed.id }) {
-            library.customFeeds[index] = feed
-        } else {
-            library.customFeeds.append(feed)
-        }
-        if makesDefault {
-            library.defaultSource = .custom(feed.id)
-        } else if library.defaultSource == .custom(feed.id) {
-            library.defaultSource = .stream(feed.stream)
-        }
+        if feed.name.isEmpty { feed.name = CustomFeed.defaultName(forTags: feed.tags) }
+        library.save(feed, makeDefault: makesDefault)
         dismiss()
     }
 }
