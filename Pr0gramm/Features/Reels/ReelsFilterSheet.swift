@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Sheet for editing the Reels filter.
 struct ReelsFilterSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ReelsFilterStore.self) private var store
@@ -42,7 +41,6 @@ struct ReelsFilterSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig", role: .confirm) {
-                        // Keep what was typed but not yet confirmed with return.
                         store.filter.include(newIncluded)
                         store.filter.exclude(newExcluded)
                         dismiss()

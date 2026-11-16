@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// A feed pushed from a tag or link. Tag feeds can switch between beliebt, neu and müll.
 struct FeedScreen: View {
     @State private var model: FeedModel
 
@@ -19,7 +18,6 @@ struct FeedScreen: View {
     }
 }
 
-/// Grid plus, for tag searches, a glass stream switcher and a button to save the search as a feed.
 struct FeedScreenContent: View {
     @Environment(FeedLibrary.self) private var library
     let model: FeedModel

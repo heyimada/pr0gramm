@@ -17,14 +17,12 @@ final class FeedModel {
         self.query = query
     }
 
-    /// A fixed list, e.g. the "Top 10 heute" rail, so it can be opened in the pager.
     init(items: [FeedItem], query: FeedQuery) {
         self.query = query
         self.items = items
         atEnd = true
     }
 
-    /// Loads the first page, or reloads if the content filter changed since the last load.
     func loadIfNeeded(flags: ContentFlags) async {
         guard items.isEmpty || loadedFlags != flags else { return }
         await reload(flags: flags)
@@ -57,14 +55,12 @@ final class FeedModel {
         }
     }
 
-    /// Triggers paging when `item` is close to the end of the list.
     func loadMoreIfNeeded(after item: FeedItem, flags: ContentFlags) async {
         guard let index = items.firstIndex(of: item), index >= items.count - 12 else { return }
         await loadMore(flags: flags)
     }
 }
 
-/// One model per query so switching back keeps loaded items.
 final class FeedCache {
     private var models: [FeedQuery: FeedModel] = [:]
 

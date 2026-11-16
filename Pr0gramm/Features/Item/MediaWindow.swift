@@ -2,7 +2,6 @@ import AVKit
 import SwiftUI
 
 #if os(visionOS)
-/// Stand-alone window showing just an item's media, which the user can resize and place freely.
 struct MediaWindow: View {
     static let id = "media"
 
@@ -32,7 +31,6 @@ struct MediaWindow: View {
         .onDisappear { looping?.player.pause() }
     }
 
-    /// Fits the media into roughly 1000pt on its longer side.
     private var idealSize: CGSize {
         let longSide: CGFloat = 1000
         return item.aspectRatio >= 1

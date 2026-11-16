@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Choose the default feed and manage saved tag feeds.
 struct FeedSettingsView: View {
     @Environment(FeedLibrary.self) private var library
     @State private var editedFeed: CustomFeed?
@@ -82,7 +81,6 @@ struct FeedSettingsView: View {
     }
 }
 
-/// Sheet to create or edit a saved tag feed.
 struct CustomFeedEditor: View {
     @Environment(FeedLibrary.self) private var library
     @Environment(\.dismiss) private var dismiss

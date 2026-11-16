@@ -10,7 +10,6 @@ struct ContentFlags: OptionSet, Hashable, Codable, Sendable {
     static let nsfp = ContentFlags(rawValue: 8)
     static let pol = ContentFlags(rawValue: 16)
 
-    /// The filters a user can switch, in the order the settings show them.
     static let filters: [(flag: ContentFlags, title: String, subtitle: String)] = [
         (.sfw, "SFW", "Safe for work"),
         (.nsfw, "NSFW", "Nackte Haut, Pornos und leicht offensiver Kram"),

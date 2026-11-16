@@ -6,7 +6,6 @@ struct FeedGrid<Header: View>: View {
     @Namespace private var namespace
     let model: FeedModel
     var showsBackground = true
-    /// Called with the vertical scroll offset, measured from the top of the content.
     var onScroll: ((CGFloat) -> Void)?
     @ViewBuilder var header: Header
 
@@ -55,12 +54,10 @@ struct FeedGrid<Header: View>: View {
     }
 }
 
-/// What a feed with no posts shows: the error with a retry, a spinner while loading, else a note.
 struct FeedStatus: View {
     @Environment(Session.self) private var session
     let model: FeedModel
     let emptySymbol: String
-    /// Applied only while the status is showing, so a populated feed gains no space.
     var topInset: CGFloat = 0
 
     var body: some View {

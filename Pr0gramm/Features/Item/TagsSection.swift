@@ -29,7 +29,6 @@ struct TagsSection: View {
     }
 }
 
-/// Tag chip; tap searches, long press votes. A voted tag gets a colored outline.
 private struct TagPill: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app

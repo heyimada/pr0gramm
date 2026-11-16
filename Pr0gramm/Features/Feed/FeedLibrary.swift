@@ -2,19 +2,16 @@ import LocalAuthentication
 import Observation
 import SwiftUI
 
-/// The user's saved tag feeds and the default feed, with the protected-feeds lock.
 @Observable
 final class FeedLibrary {
     private let session: Session
 
-    /// Feed that Start, the Feed tab and Reels open with. Configured under Einstellungen › Feeds.
     var defaultSource: FeedSource {
         didSet {
             UserDefaults.standard.set(try? JSONEncoder().encode(defaultSource), forKey: Self.defaultSourceKey)
         }
     }
 
-    /// Saved tag searches, in the order they appear in the Feed tab.
     var customFeeds: [CustomFeed] {
         didSet {
             UserDefaults.standard.set(try? JSONEncoder().encode(customFeeds), forKey: Self.customFeedsKey)
@@ -42,7 +39,6 @@ final class FeedLibrary {
         customFeeds.first { $0.id == id }
     }
 
-    /// `.top` for a custom feed that has since been deleted.
     func query(for source: FeedSource) -> FeedQuery {
         switch source {
         case .stream(let stream): FeedQuery(stream: stream)
@@ -57,7 +53,6 @@ final class FeedLibrary {
         }
     }
 
-    /// Stream that tag feeds and searches start in: the default feed's.
     var defaultStream: FeedStream { query(for: defaultSource).stream }
 
     /// The switcher's entries: beliebt · neu · müll, abos if wanted and logged in, then the visible
@@ -78,7 +73,6 @@ final class FeedLibrary {
         return defaultSource
     }
 
-    /// What a screen shows: the user's pick, else the default feed, else beliebt when that isn't offered.
     func currentSource(picked: FeedSource?, in sources: [FeedSource]) -> FeedSource {
         let source = picked ?? effectiveDefaultSource
         return sources.contains(source) ? source : .stream(.top)
@@ -92,7 +86,6 @@ final class FeedLibrary {
         !feed.isProtected || protectedFeedsUnlocked
     }
 
-    /// Custom feeds that may be shown right now, ignoring the content filter; used for managing them.
     var accessibleCustomFeeds: [CustomFeed] { customFeeds.filter(isAccessible) }
 
     /// Asks for Face ID (or the device passcode) before showing protected feeds.

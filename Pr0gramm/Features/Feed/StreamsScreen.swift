@@ -1,10 +1,7 @@
 import SwiftUI
 
-/// Feed tab: the stream grid with a floating glass capsule for beliebt · neu · müll (· abos)
-/// and the user's own feeds. Opens on the default feed from the settings.
 struct StreamsScreen: View {
     @Environment(FeedLibrary.self) private var library
-    /// `nil` until the user picks something, so the tab follows changes to the default feed.
     @State private var selection: FeedSource?
     @State private var cache = FeedCache()
     @State private var collapse = ScrollCollapse()
@@ -50,19 +47,13 @@ struct StreamsScreen: View {
     }
 }
 
-/// Collapses a bar after scrolling down a bit and brings it back after scrolling up a bit,
-/// like the tab bar's minimize behavior. Only `isCollapsed` is observed, so scrolling itself
-/// doesn't re-render anything.
 @Observable
 final class ScrollCollapse {
     private(set) var isCollapsed = false
-    /// Offset where the current direction started: the lowest point while expanded, the highest while collapsed.
-    /// `nil` after switching feeds, until the new feed reports its offset.
     @ObservationIgnored private var anchor: CGFloat?
     @ObservationIgnored private var offset: CGFloat = 0
 
     private static let threshold: CGFloat = 24
-    /// Always expanded this close to the top.
     private static let topZone: CGFloat = 40
 
     func scrolled(to offset: CGFloat) {
@@ -87,7 +78,6 @@ final class ScrollCollapse {
         set(collapsed: false)
     }
 
-    /// Expands for a newly selected feed, whose scroll position is unrelated to the last one's.
     func reset() {
         anchor = nil
         guard isCollapsed else { return }

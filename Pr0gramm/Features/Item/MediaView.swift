@@ -1,7 +1,6 @@
 import AVKit
 import SwiftUI
 
-/// Displays an item's image or looping video, sized to its aspect ratio.
 struct MediaView: View {
     let item: FeedItem
     let isActive: Bool
@@ -93,7 +92,6 @@ struct LoopingVideoView: View {
         .onChange(of: isActive, initial: true) { update() }
     }
 
-    /// Plays while this page is the visible one; tears the player down when it isn't to save memory.
     private func update() {
         guard isActive, session.autoplayVideos || playback.userStarted else {
             playback.looping?.player.pause()

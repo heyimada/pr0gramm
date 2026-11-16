@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Toolbar of every tab root: logo on the left, content filter and account on the right.
 struct MainToolbar: ToolbarContent {
     var body: some ToolbarContent {
         #if os(iOS)
@@ -24,7 +23,6 @@ struct MainToolbar: ToolbarContent {
     }
 }
 
-/// SFW / NSFW / NSFL / POL toggles in a native menu.
 struct FilterMenu<Label: View>: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
@@ -54,7 +52,6 @@ struct FilterMenu<Label: View>: View {
     }
 }
 
-/// Locks or unlocks protected feeds, whichever applies right now.
 struct ProtectedFeedsButton: View {
     @Environment(FeedLibrary.self) private var library
 
@@ -69,7 +66,6 @@ struct ProtectedFeedsButton: View {
     }
 }
 
-/// Avatar menu when logged in, otherwise a login button.
 struct AccountItem: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
@@ -109,7 +105,6 @@ struct AccountItem: View {
     }
 }
 
-/// Logo plus "pr0gramm" wordmark for the leading toolbar slot.
 struct Wordmark: View {
     var body: some View {
         HStack(spacing: 8) {

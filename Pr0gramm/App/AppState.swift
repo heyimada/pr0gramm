@@ -55,7 +55,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The stream shown by the single-stream tabs.
     var stream: FeedStream? {
         switch self {
         case .top: .top
@@ -67,7 +66,6 @@ enum AppTab: String, CaseIterable, Identifiable {
     }
 }
 
-/// Selected tab, the user's tab bar configuration, one navigation path per tab, and app-wide sheets.
 @Observable
 final class AppState {
     var tab: AppTab
@@ -75,7 +73,6 @@ final class AppState {
     var showsSettings = false
     var search = SearchOptions()
 
-    /// Tabs shown in the tab bar, in order. Configured under Einstellungen › Navigation.
     var tabOrder: [AppTab] {
         didSet { UserDefaults.standard.set(tabOrder.map(\.rawValue), forKey: Self.tabOrderKey) }
     }
@@ -94,7 +91,6 @@ final class AppState {
         tabOrder = order
     }
 
-    /// Casts a vote for the logged-in user, or opens the login when there is none.
     func toggleVote(_ target: VoteTarget, id: Int, _ value: Int, in session: Session) async throws {
         guard session.isLoggedIn else { return showsLogin = true }
         try await session.toggleVote(target, id: id, value)

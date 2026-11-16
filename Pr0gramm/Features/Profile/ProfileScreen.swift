@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// A user's profile with their uploads.
 struct ProfileScreen: View {
     @Environment(Session.self) private var session
     let name: String

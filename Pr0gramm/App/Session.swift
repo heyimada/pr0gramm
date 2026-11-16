@@ -2,11 +2,9 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// Login state, content settings and the user's votes.
 @Observable
 final class Session {
     private(set) var userName: String?
-    /// The logged-in user's Benis, shown in the side menu.
     private(set) var userScore: Int?
     @ObservationIgnored private var isSyncing = false
 
@@ -126,12 +124,10 @@ final class Session {
         votes[target]?[id] ?? 0
     }
 
-    /// Casts `value` (-1 or 1), or 0 when that is already the current vote.
     func toggleVote(_ target: VoteTarget, id: Int, _ value: Int) async throws {
         try await vote(target, id: id, value: vote(for: target, id: id) == value ? 0 : value)
     }
 
-    /// Casts `value` (-1, 0, 1), updating local state optimistically and rolling back on failure.
     private func vote(_ target: VoteTarget, id: Int, value: Int) async throws {
         guard let nonce else { throw APIError.notLoggedIn }
         let previous = vote(for: target, id: id)
@@ -150,8 +146,7 @@ final class Session {
         return try await APIClient.shared.postComment(itemId: itemId, parentId: parentId, text: text, nonce: nonce).comments
     }
 
-    /// Pulls the vote log the server keeps for this account, so votes cast elsewhere show up here.
-    /// The log is a sequence of 5-byte records: little-endian Int32 id followed by an action byte.
+    /// The vote log the server keeps is a sequence of 5-byte records: little-endian Int32 id followed by an action byte.
     func sync() async {
         guard let userName, !isSyncing else { return }
         isSyncing = true

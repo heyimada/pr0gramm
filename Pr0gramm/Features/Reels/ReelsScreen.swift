@@ -1,12 +1,9 @@
 import SwiftUI
 
-/// Full-screen vertical feed, one post per page, TikTok-style. Swiping sideways switches between
-/// beliebt, neu, müll and the user's own feeds, like Instagram's "Für dich" and "Freunde".
 struct ReelsScreen: View {
     @Environment(Session.self) private var session
     @Environment(FeedLibrary.self) private var library
     @State private var store = ReelsFilterStore()
-    /// `nil` until the user picks a feed, so Reels follows changes to the default feed.
     @State private var selection: FeedSource?
     @State private var pool = ReelPlayerPool()
     @State private var insets = EdgeInsets()
@@ -28,7 +25,6 @@ struct ReelsScreen: View {
                     .id(query)
             }
 
-            // Keeps the header readable over bright posts, like Instagram's.
             LinearGradient(colors: [.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
                 .frame(height: 140)
                 .ignoresSafeArea(edges: .top)
@@ -47,7 +43,6 @@ struct ReelsScreen: View {
         .onDisappear { pool.pauseAll() }
     }
 
-    /// Instagram-style header: Reels filter on the left, the feeds as plain text tabs, content filter on the right.
     private var controls: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
@@ -192,7 +187,6 @@ private struct ReelsFeed: View {
     }
 }
 
-/// One reel: media, caption bottom-left, action column bottom-right.
 private struct ReelPage: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
@@ -372,7 +366,6 @@ private struct ReelPage: View {
     }
 }
 
-/// Tags and comments of a reel in a sheet.
 private struct ReelCommentsSheet: View {
     @Environment(\.dismiss) private var dismiss
     let item: FeedItem
@@ -408,7 +401,6 @@ private struct ReelCommentsSheet: View {
     }
 }
 
-/// "Laden" in the reel action column, backed by the download store.
 private struct ReelDownloadAction: View {
     @Environment(DownloadStore.self) private var store
     let item: FeedItem

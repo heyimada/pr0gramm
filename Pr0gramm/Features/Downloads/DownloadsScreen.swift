@@ -1,7 +1,6 @@
 import AVKit
 import SwiftUI
 
-/// Downloads tab: grid of offline posts.
 struct DownloadsScreen: View {
     @Environment(DownloadStore.self) private var store
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -37,7 +36,6 @@ struct DownloadsScreen: View {
     }
 }
 
-/// Share, save to Photos and delete, used in context menus and the viewer's toolbar.
 struct DownloadActions: View {
     @Environment(DownloadStore.self) private var store
     let download: Download
@@ -57,7 +55,6 @@ struct DownloadActions: View {
     }
 }
 
-/// Plays or shows a downloaded file from disk.
 struct DownloadViewer: View {
     @Environment(DownloadStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -102,7 +99,6 @@ struct DownloadViewer: View {
     }
 }
 
-/// "Laden" pill: downloads the post, shows progress, then "Gespeichert".
 struct DownloadButton: View {
     @Environment(DownloadStore.self) private var store
     let item: FeedItem

@@ -9,7 +9,6 @@ enum Route: Hashable {
     case download(Int)
 }
 
-/// Opens the swipeable pager on a specific item of an already loaded feed.
 struct PagerRoute: Hashable {
     let model: FeedModel
     let itemID: Int
@@ -25,7 +24,6 @@ struct PagerRoute: Hashable {
     }
 }
 
-/// Navigation path of one tab. Also turns pr0gramm links into in-app navigation.
 @Observable
 final class Router {
     var path: [Route] = []
@@ -52,7 +50,6 @@ final class Router {
     }
 }
 
-/// A tab's `NavigationStack` with the shared route destinations and in-app link handling.
 struct RoutedStack<Root: View>: View {
     @Bindable var router: Router
     @ViewBuilder var root: Root

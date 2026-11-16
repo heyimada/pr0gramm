@@ -1,14 +1,10 @@
 import SwiftUI
 
-/// Start tab: a feed switcher, the feed's top post of the day as a hero, a "Top 10 heute" rail,
-/// then the rest of the feed. Opens on the default feed (beliebt unless changed in the settings).
 struct HomeScreen: View {
     @Environment(FeedLibrary.self) private var library
     @State private var cache = FeedCache()
-    /// `nil` until the user picks a feed, so Start follows changes to the default feed.
     @State private var selection: FeedSource?
 
-    /// Posts from the last 24 hours with visible scores, best first. Falls back to all loaded posts.
     private func ranked(_ feed: FeedModel) -> [FeedItem] {
         let cutoff = Date(timeIntervalSinceNow: -86_400)
         let visible = feed.items.filter { !$0.createdAt.isScoreHidden }
@@ -33,7 +29,6 @@ struct HomeScreen: View {
         }
     }
 
-    /// Custom feeds name themselves above the heading; the streams' names are in it already.
     private var sectionKicker: String {
         if case .custom = source { return library.title(for: source) }
         return "Alle Posts"
@@ -83,7 +78,6 @@ struct SectionTitle: View {
     }
 }
 
-/// The hero post, blurred and huge, behind the whole screen.
 private struct AmbientBackdrop: View {
     let url: URL?
 
@@ -217,7 +211,6 @@ private struct HeroCard: View {
     }
 }
 
-/// Horizontal rail of the next best posts with big rank numerals.
 private struct TopRail: View {
     let items: [FeedItem]
     let model: FeedModel
@@ -276,7 +269,6 @@ private struct RailCard: View {
     }
 }
 
-/// Slight shrink and fade while a card is pressed.
 struct CardPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

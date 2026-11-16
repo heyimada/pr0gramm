@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Horizontally paging item viewer over a feed; loads more items as you approach the end.
 struct ItemPagerView: View {
     @Environment(Session.self) private var session
     let model: FeedModel
@@ -42,7 +41,6 @@ struct ItemPagerView: View {
         #endif
     }
 
-    /// Moves to the neighbouring item; `nil` if there is none in that direction.
     private func step(from item: FeedItem, by offset: Int) -> (() -> Void)? {
         guard let index = model.items.firstIndex(of: item),
               model.items.indices.contains(index + offset) else { return nil }
@@ -51,7 +49,6 @@ struct ItemPagerView: View {
     }
 }
 
-/// Item opened from a link: loads the item by id and shows it on its own.
 struct SingleItemScreen: View {
     @Environment(Session.self) private var session
     let id: Int

@@ -1,7 +1,6 @@
 import AVFoundation
 import SwiftUI
 
-/// Bare video surface without system controls, for reels and the home hero.
 struct PlayerLayerView: UIViewRepresentable {
     let player: AVPlayer?
     var gravity: AVLayerVideoGravity = .resizeAspect
@@ -23,7 +22,6 @@ struct PlayerLayerView: UIViewRepresentable {
     }
 }
 
-/// Owns an `AVQueuePlayer` that loops a single video.
 @Observable
 final class LoopingPlayer {
     let player = AVQueuePlayer()

@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Lays out subviews left-to-right, wrapping onto new lines as needed (used for tags and badges).
 struct FlowLayout: Layout {
     var spacing: CGFloat = 6
 

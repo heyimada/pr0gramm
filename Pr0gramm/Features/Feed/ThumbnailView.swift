@@ -3,7 +3,6 @@ import SwiftUI
 struct ThumbnailView: View {
     let item: FeedItem
 
-    /// Three columns on phones like pr0.app; more on wider screens.
     static func thumbnailColumns(compact: Bool, spacing: CGFloat) -> [GridItem] {
         compact
             ? Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3)

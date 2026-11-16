@@ -1,6 +1,5 @@
 import Observation
 
-/// Tags and comments of one post, fetched on demand and shared by every view that shows them.
 @Observable
 final class ItemDetails {
     let itemID: Int
@@ -26,7 +25,6 @@ final class ItemDetails {
         await load()
     }
 
-    /// After posting a comment: swaps in the returned comment list, or reloads when there is none.
     func apply(postedComments comments: [Comment]?) async {
         if let comments, info != nil {
             info?.comments = comments

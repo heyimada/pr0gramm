@@ -11,7 +11,6 @@ struct Download: Codable, Identifiable {
 
 enum DownloadState { case notSaved, loading, saved }
 
-/// Posts saved for offline viewing in `Documents/Downloads`, with a JSON index next to them.
 @Observable
 final class DownloadStore {
     private(set) var downloads: [Download] = []
@@ -80,7 +79,6 @@ final class DownloadStore {
         persist()
     }
 
-    /// Copies a download into the photo library (asks for add-only access).
     func saveToPhotos(_ download: Download) async throws {
         let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
         guard status == .authorized || status == .limited else {

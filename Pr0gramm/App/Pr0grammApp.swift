@@ -32,7 +32,6 @@ struct Pr0grammApp: App {
         #endif
 
         #if os(visionOS)
-        // Detached media viewer, so a picture or video can be placed and scaled on its own in the room.
         WindowGroup(id: MediaWindow.id, for: FeedItem.self) { $item in
             if let item {
                 MediaWindow(item: item)
@@ -48,7 +47,6 @@ struct Pr0grammApp: App {
     }
 }
 
-/// System tab bar with one navigation stack per stream, plus a search tab.
 struct RootView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app

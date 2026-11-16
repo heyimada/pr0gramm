@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// The orange `>_` terminal logo.
 struct Pr0Logo: View {
     var size: CGFloat = 30
 
@@ -25,7 +24,6 @@ struct Pr0Logo: View {
     }
 }
 
-/// Round initials avatar, e.g. "MU" for MUSE or "Cu" for Cumarin.
 struct Avatar: View {
     let name: String
     var size: CGFloat = 24
@@ -45,7 +43,6 @@ struct Avatar: View {
     }
 }
 
-/// Small dot in the user's rank color.
 struct MarkDot: View {
     let mark: Int
     var size: CGFloat = 8
@@ -67,7 +64,6 @@ struct OPBadge: View {
     }
 }
 
-/// Benis, or a crossed-out eye while the score is still hidden.
 struct ScoreView: View {
     let score: Int
     let created: Date
@@ -84,7 +80,6 @@ struct ScoreView: View {
     }
 }
 
-/// Circled ⊕ / ⊖ buttons. Guests are asked to log in instead.
 struct VoteButtons: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
@@ -128,7 +123,6 @@ struct VoteButtons: View {
     }
 }
 
-/// Glass capsule segmented control, e.g. "beliebt · neu · müll" above a tag feed.
 struct SegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
@@ -138,7 +132,6 @@ struct SegmentCapsule<Value: Hashable>: View {
     @Namespace private var namespace
 
     var body: some View {
-        // Scrolls sideways once saved feeds no longer fit next to the streams.
         ViewThatFits(in: .horizontal) {
             segments
             ScrollViewReader { proxy in
@@ -188,8 +181,6 @@ struct SegmentCapsule<Value: Hashable>: View {
     }
 }
 
-/// A `SegmentCapsule` that shrinks into a pill with just the selected title while collapsed,
-/// the way the tab bar minimizes on scroll. Tapping the pill expands it again.
 struct CollapsingSegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
@@ -242,7 +233,6 @@ private struct GlassID: ViewModifier {
 #endif
 
 extension View {
-    /// Section heading with a trailing hairline, like "Hochlads ───".
     func pr0SectionHeader() -> some View {
         HStack(spacing: 10) {
             self.font(.footnote).foregroundStyle(Color.pr0Secondary)
@@ -251,7 +241,6 @@ extension View {
     }
 }
 
-/// Full-screen error state with a retry button.
 struct ErrorView: View {
     let error: Error
     let retry: () async -> Void
@@ -288,7 +277,6 @@ struct RemoteImage: View {
     }
 }
 
-/// Label of a pill-shaped action button in the post's action row.
 struct ActionPillLabel: View {
     let title: String
     let symbol: String

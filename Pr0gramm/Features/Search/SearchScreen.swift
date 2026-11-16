@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// Search tab. The system search field lives in the tab bar; below it the extended options,
-/// then results once a search has been submitted.
 struct SearchScreen: View {
     @Environment(AppState.self) private var app
     @Environment(FeedLibrary.self) private var library

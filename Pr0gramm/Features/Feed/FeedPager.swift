@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// Full-size pages of feeds side by side in a horizontal paging scroll view that follows `current`
-/// and reports swipes to another feed.
 struct FeedPager<Page: View>: View {
     let sources: [FeedSource]
     let current: FeedSource

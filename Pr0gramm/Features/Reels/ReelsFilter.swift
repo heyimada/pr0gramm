@@ -1,7 +1,6 @@
 import Observation
 import SwiftUI
 
-/// What the Reels tab narrows every feed to: media type and tags to include or exclude. Persisted.
 struct ReelsFilter: Codable, Equatable {
     var onlyVideos = true
     var includedTags: [String] = []
@@ -9,7 +8,7 @@ struct ReelsFilter: Codable, Equatable {
 
     var hasTagFilter: Bool { !includedTags.isEmpty || !excludedTags.isEmpty }
 
-    /// `feed` narrowed down as an extended search, e.g. `! video kadse "steile frise" -"süßvieh"`.
+    /// Extended search syntax, e.g. `! video kadse "steile frise" -"süßvieh"`.
     func query(for feed: FeedQuery) -> FeedQuery {
         func quoted(_ tag: String) -> String {
             tag.contains(where: \.isWhitespace) ? "\"\(tag)\"" : tag
@@ -42,7 +41,6 @@ struct ReelsFilter: Codable, Equatable {
     }
 }
 
-/// The persisted Reels filter, shared by the Reels screen, its filter sheet and the reels' tag menus.
 @Observable
 final class ReelsFilterStore {
     var filter: ReelsFilter {

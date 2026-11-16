@@ -1,14 +1,12 @@
 import SwiftUI
 
-/// A comment positioned in the flattened thread.
 struct CommentNode: Identifiable {
     let comment: Comment
     let depth: Int
     let replyCount: Int
     var id: Int { comment.id }
 
-    /// Depth-first flattening; siblings are ordered by confidence like on the website.
-    /// Descendants of `collapsed` comments are skipped.
+    /// Siblings are ordered by confidence like on the website.
     static func flatten(_ comments: [Comment], collapsed: Set<Int>) -> [CommentNode] {
         let children = Dictionary(grouping: comments, by: \.parent)
             .mapValues { $0.sorted { $0.confidence > $1.confidence } }
@@ -99,7 +97,6 @@ private struct CommentRow: View {
     let onToggle: () -> Void
     let onReply: () -> Void
 
-    /// Past this depth, threads stop indenting so text stays readable on phones.
     private static let maxIndent = 6
 
     var body: some View {
@@ -202,7 +199,6 @@ private struct CommentRow: View {
     }
 }
 
-/// Turns plain comment text into an `AttributedString` with tappable URLs and @mentions.
 enum CommentText {
     private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
     private static let mention = /@([A-Za-z0-9_-]{2,32})/

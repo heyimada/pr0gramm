@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// One post as laid out on pr0.app: media, vote/info bar, tags, comments. On wide regular-width
-/// pages (iPhone Duo opened in landscape, iPad) the media gets its own column next to the rest.
 struct ItemDetailView: View {
     @Environment(Session.self) private var session
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -11,7 +9,6 @@ struct ItemDetailView: View {
     /// Leading and trailing safe-area insets the page spans but must keep its content out of, e.g.
     /// the vertical bar of an iPhone Duo. Backgrounds still run underneath.
     var sideInsets = EdgeInsets()
-    /// Returns an action moving to the previous (-1) or next (+1) post, if there is one.
     var step: (Int) -> (() -> Void)? = { _ in nil }
 
     @State private var details: ItemDetails
@@ -35,8 +32,6 @@ struct ItemDetailView: View {
         Group {
             if isSideBySide {
                 HStack(spacing: 0) {
-                    // Sized by the space left rather than by the media, so the page can't outgrow the screen.
-                    // Only very tall images scroll; everything else fits the column below the bars.
                     GeometryReader { proxy in
                         ScrollView {
                             media(maxHeight: max(proxy.size.height - (item.sourceURL == nil ? 0 : SourceBar.height), 0))
@@ -68,7 +63,6 @@ struct ItemDetailView: View {
         .task { await details.load() }
     }
 
-    /// Media and source link, kept clear of `insets` while their backgrounds fill them.
     private func media(maxHeight: CGFloat, insets: EdgeInsets = EdgeInsets()) -> some View {
         VStack(spacing: 0) {
             MediaView(item: item, isActive: isActive, playback: playback, maxHeight: maxHeight)
@@ -150,7 +144,6 @@ private struct SourceBar: View {
     }
 }
 
-/// Faint ‹ › buttons on the media's edges for stepping through the feed.
 private struct StepArrows: View {
     let previous: (() -> Void)?
     let next: (() -> Void)?
@@ -180,7 +173,6 @@ private struct StepArrows: View {
     }
 }
 
-/// Uploader row, then a row of actions (vote capsule, share, download) below the media.
 struct ItemInfoBar: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openURL) private var openURL
@@ -248,7 +240,6 @@ struct ItemInfoBar: View {
     }
 }
 
-/// ⊕ score ⊖ in one capsule.
 struct VoteCapsule: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app

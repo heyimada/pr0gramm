@@ -26,7 +26,6 @@ struct CustomFeed: Codable, Hashable, Identifiable {
         return FeedQuery(stream: stream, tags: needsExtended ? "! " + tags : tags)
     }
 
-    /// A feed prefilled from a tag search, named after its tags.
     init(query: FeedQuery) {
         let tags = query.tags ?? ""
         self.name = TagQuery(tags).body
@@ -56,7 +55,6 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     }
 }
 
-/// One entry of the Feed tab's switcher and of the "Standard-Feed" setting.
 nonisolated enum FeedSource: Hashable, Codable, Sendable {
     case stream(FeedStream)
     case custom(CustomFeed.ID)

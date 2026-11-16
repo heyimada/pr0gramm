@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Choose and order the tabs in the tab bar.
 struct NavigationSettingsView: View {
     @Environment(AppState.self) private var app
     @Environment(\.horizontalSizeClass) private var sizeClass
