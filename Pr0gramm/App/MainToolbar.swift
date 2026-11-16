@@ -29,15 +29,11 @@ struct FilterMenu: View {
     /// A bare white icon for overlays like the Reels header, instead of the toolbar circle.
     var plain = false
 
-    private let flags: [(ContentFlags, String)] = [
-        (.sfw, "SFW"), (.nsfw, "NSFW"), (.nsfl, "NSFL"), (.pol, "POL"),
-    ]
-
     var body: some View {
         Menu {
             if session.isLoggedIn {
-                ForEach(flags, id: \.1) { flag, title in
-                    Toggle(title, isOn: binding(for: flag))
+                ForEach(ContentFlags.filters, id: \.title) { filter in
+                    Toggle(filter.title, isOn: session.filterBinding(filter.flag))
                 }
             } else {
                 Section("Ohne Anmeldung gibt es nur SFW.") {
@@ -46,13 +42,7 @@ struct FilterMenu: View {
             }
             if app.hasProtectedFeeds {
                 Section {
-                    if app.protectedFeedsUnlocked {
-                        Button("Geschützte Feeds sperren", systemImage: "lock") { app.lockProtectedFeeds() }
-                    } else {
-                        Button("Geschützte Feeds entsperren", systemImage: "lock.open") {
-                            Task { await app.unlockProtectedFeeds() }
-                        }
-                    }
+                    ProtectedFeedsButton()
                 }
             }
         } label: {
@@ -71,12 +61,19 @@ struct FilterMenu: View {
         }
         .menuActionDismissBehavior(.disabled)
     }
+}
 
-    private func binding(for flag: ContentFlags) -> Binding<Bool> {
-        Binding {
-            session.flags.contains(flag)
-        } set: { isOn in
-            if isOn { session.selectedFlags.insert(flag) } else { session.selectedFlags.remove(flag) }
+/// Locks or unlocks protected feeds, whichever applies right now.
+struct ProtectedFeedsButton: View {
+    @Environment(AppState.self) private var app
+
+    var body: some View {
+        if app.protectedFeedsUnlocked {
+            Button("Geschützte Feeds sperren", systemImage: "lock") { app.lockProtectedFeeds() }
+        } else {
+            Button("Geschützte Feeds entsperren", systemImage: "lock.open") {
+                Task { await app.unlockProtectedFeeds() }
+            }
         }
     }
 }

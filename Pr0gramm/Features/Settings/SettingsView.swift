@@ -29,10 +29,12 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    flagToggle("SFW", "Safe for work", .sfw)
-                    flagToggle("NSFW", "Nackte Haut, Pornos und leicht offensiver Kram", .nsfw)
-                    flagToggle("NSFL", "Alles. Gewalt, ekliger Scheiß", .nsfl)
-                    flagToggle("POL", "Politik, Wirtschaft, Kriminalität, Konflikte", .pol)
+                    ForEach(ContentFlags.filters, id: \.title) { filter in
+                        Toggle(isOn: session.filterBinding(filter.flag)) {
+                            Text(filter.title)
+                            Text(filter.subtitle)
+                        }
+                    }
                     Toggle(isOn: $session.resetsFlagsOnLaunch) {
                         Text("Beim Start auf SFW zurücksetzen")
                         Text("Nach jedem Neustart der App ist nur SFW an")
@@ -77,17 +79,6 @@ struct SettingsView: View {
             .confirmationDialog("Alle Downloads löschen?", isPresented: $confirmsDeleteAll, titleVisibility: .visible) {
                 Button("Löschen", role: .destructive) { downloads.deleteAll() }
             }
-        }
-    }
-
-    private func flagToggle(_ title: String, _ subtitle: String, _ flag: ContentFlags) -> some View {
-        Toggle(isOn: Binding {
-            session.flags.contains(flag)
-        } set: { isOn in
-            if isOn { session.selectedFlags.insert(flag) } else { session.selectedFlags.remove(flag) }
-        }) {
-            Text(title)
-            Text(subtitle)
         }
     }
 }

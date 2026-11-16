@@ -15,8 +15,7 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     /// Shown only while every active filter is one of its own, e.g. an NSFW-bound feed while NSFW
     /// is the only filter on, but not with SFW on as well.
     func isVisible(with active: ContentFlags) -> Bool {
-        let switchable: ContentFlags = [.sfw, .nsfw, .nsfl, .pol]
-        return flags.isEmpty || flags.isSuperset(of: active.intersection(switchable))
+        flags.isEmpty || flags.isSuperset(of: active.intersection(.switchable))
     }
 
     var query: FeedQuery {

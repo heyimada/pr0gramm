@@ -62,13 +62,7 @@ struct FeedSettingsView: View {
 
                 Button("Feed hinzufügen", systemImage: "plus") { addsFeed = true }
                 if app.hasProtectedFeeds {
-                    if app.protectedFeedsUnlocked {
-                        Button("Geschützte Feeds sperren", systemImage: "lock") { app.lockProtectedFeeds() }
-                    } else {
-                        Button("Geschützte Feeds entsperren", systemImage: "lock.open") {
-                            Task { await app.unlockProtectedFeeds() }
-                        }
-                    }
+                    ProtectedFeedsButton()
                 }
             } header: {
                 Text("Eigene Feeds")
@@ -89,17 +83,6 @@ struct FeedSettingsView: View {
         }
         .sheet(item: $editedFeed) { CustomFeedEditor(feed: $0, isNew: false) }
         .sheet(isPresented: $addsFeed) { CustomFeedEditor(feed: CustomFeed(), isNew: true) }
-    }
-}
-
-extension ContentFlags {
-    /// The filters a user can switch, in the order the settings show them.
-    static let filters: [(flag: ContentFlags, title: String)] = [
-        (.sfw, "SFW"), (.nsfw, "NSFW"), (.nsfl, "NSFL"), (.pol, "POL"),
-    ]
-
-    static func filterTitles(in flags: ContentFlags) -> [String] {
-        filters.filter { flags.contains($0.flag) }.map(\.title)
     }
 }
 

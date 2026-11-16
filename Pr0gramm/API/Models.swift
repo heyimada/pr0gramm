@@ -9,6 +9,20 @@ struct ContentFlags: OptionSet, Hashable, Codable, Sendable {
     static let nsfl = ContentFlags(rawValue: 4)
     static let nsfp = ContentFlags(rawValue: 8)
     static let pol = ContentFlags(rawValue: 16)
+
+    /// The filters a user can switch, in the order the settings show them.
+    static let filters: [(flag: ContentFlags, title: String, subtitle: String)] = [
+        (.sfw, "SFW", "Safe for work"),
+        (.nsfw, "NSFW", "Nackte Haut, Pornos und leicht offensiver Kram"),
+        (.nsfl, "NSFL", "Alles. Gewalt, ekliger Scheiß"),
+        (.pol, "POL", "Politik, Wirtschaft, Kriminalität, Konflikte"),
+    ]
+
+    static let switchable = filters.reduce(into: ContentFlags()) { $0.formUnion($1.flag) }
+
+    static func filterTitles(in flags: ContentFlags) -> [String] {
+        filters.filter { flags.contains($0.flag) }.map(\.title)
+    }
 }
 
 struct FeedResponse: Decodable {
@@ -173,45 +187,26 @@ enum MediaHost: String {
 
 /// Official user ranks (`mark` field): colors and names.
 enum UserMark {
-    static func name(_ mark: Int) -> String {
-        switch mark {
-        case 1: "Neuschwuchtel"
-        case 2: "Altschwuchtel"
-        case 3: "Admin"
-        case 4: "Gesperrt"
-        case 5: "Moderator"
-        case 6: "Fliesentischbesitzer"
-        case 7: "Lebende Legende"
-        case 8: "Wichtler"
-        case 9: "Edler Spender"
-        case 10: "Mittelaltschwuchtel"
-        case 11: "Alt-Moderator"
-        case 12: "Communityhelfer"
-        case 13: "Nutzer-Bot"
-        case 14: "System-Bot"
-        case 15: "Alt-Helfer"
-        default: "Schwuchtel"
-        }
-    }
+    private static let ranks: [Int: (name: String, color: UInt32)] = [
+        1: ("Neuschwuchtel", 0xE108E9),
+        2: ("Altschwuchtel", 0x5BB91C),
+        3: ("Admin", 0xFF9900),
+        4: ("Gesperrt", 0x444444),
+        5: ("Moderator", 0x008FFF),
+        6: ("Fliesentischbesitzer", 0x6C432B),
+        7: ("Lebende Legende", 0x1CB992),
+        8: ("Wichtler", 0xD23C22),
+        9: ("Edler Spender", 0x1CB992),
+        10: ("Mittelaltschwuchtel", 0xADDC8D),
+        11: ("Alt-Moderator", 0x7FC7FF),
+        12: ("Communityhelfer", 0xC52B2F),
+        13: ("Nutzer-Bot", 0x10366F),
+        14: ("System-Bot", 0xFFC166),
+        15: ("Alt-Helfer", 0xEA9FA1),
+    ]
+    private static let fallback: (name: String, color: UInt32) = ("Schwuchtel", 0xFFFFFF)
 
-    static func hex(_ mark: Int) -> UInt32 {
-        switch mark {
-        case 1: 0xE108E9 // Neuschwuchtel
-        case 2: 0x5BB91C // Altschwuchtel
-        case 3: 0xFF9900 // Admin
-        case 4: 0x444444 // Gesperrt
-        case 5: 0x008FFF // Moderator
-        case 6: 0x6C432B // Fliesentischbesitzer
-        case 7: 0x1CB992 // Lebende Legende
-        case 8: 0xD23C22 // Wichtler
-        case 9: 0x1CB992 // Edler Spender
-        case 10: 0xADDC8D // Mittelaltschwuchtel
-        case 11: 0x7FC7FF // Alt-Moderator
-        case 12: 0xC52B2F // Communityhelfer
-        case 13: 0x10366F // Nutzer-Bot
-        case 14: 0xFFC166 // System-Bot
-        case 15: 0xEA9FA1 // Alt-Helfer
-        default: 0xFFFFFF // Schwuchtel
-        }
-    }
+    static func name(_ mark: Int) -> String { (ranks[mark] ?? fallback).name }
+
+    static func hex(_ mark: Int) -> UInt32 { (ranks[mark] ?? fallback).color }
 }

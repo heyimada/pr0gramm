@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 
 /// Login state, content settings and the user's votes.
 @Observable
@@ -70,6 +71,14 @@ final class Session {
 
     private func refreshFromCookie() {
         userName = meCookie?.name
+    }
+
+    func filterBinding(_ flag: ContentFlags) -> Binding<Bool> {
+        Binding {
+            self.flags.contains(flag)
+        } set: { isOn in
+            if isOn { self.selectedFlags.insert(flag) } else { self.selectedFlags.remove(flag) }
+        }
     }
 
     func login(name: String, password: String, captcha: String, token: String) async throws {
