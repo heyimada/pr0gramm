@@ -12,6 +12,8 @@ nonisolated enum FeedStream: String, Hashable, Codable, CaseIterable, Identifiab
 
     var id: Self { self }
 
+    var requiresLogin: Bool { self == .subscribed }
+
     var title: String {
         switch self {
         case .new: "neu"
@@ -22,7 +24,6 @@ nonisolated enum FeedStream: String, Hashable, Codable, CaseIterable, Identifiab
     }
 }
 
-/// Describes one stream of items, e.g. "beliebt", a tag search, or a user's uploads.
 struct FeedQuery: Hashable, Codable {
     var stream: FeedStream = .top
     var tags: String?

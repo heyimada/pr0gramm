@@ -2,13 +2,13 @@ import SwiftUI
 
 enum Route: Hashable {
     case feed(FeedQuery)
+    case tag(String)
     case user(String)
     case item(Int)
     case pager(PagerRoute)
     case download(Int)
 }
 
-/// Opens the swipeable pager on a specific item of an already loaded feed.
 struct PagerRoute: Hashable {
     let model: FeedModel
     let itemID: Int
@@ -24,7 +24,6 @@ struct PagerRoute: Hashable {
     }
 }
 
-/// Navigation path of one tab. Also turns pr0gramm links into in-app navigation.
 @Observable
 final class Router {
     var path: [Route] = []
@@ -35,8 +34,7 @@ final class Router {
 
     /// Maps links like `pr0gramm.com/top/123`, `/new/katze/123`, `/user/name` or `pr0.app/...` to routes.
     static func route(for url: URL) -> Route? {
-        guard let host = url.host(),
-              host == "pr0gramm.com" || host.hasSuffix(".pr0gramm.com") || host == "pr0.app" else { return nil }
+        guard Site.isOwn(url) else { return nil }
         // Old-style links keep the path in the fragment: `pr0gramm.com/#top/123`.
         let path = url.fragment.map { "/" + $0 } ?? url.path()
         let parts = path.split(separator: "/").map { String($0).removingPercentEncoding ?? String($0) }
@@ -52,7 +50,6 @@ final class Router {
     }
 }
 
-/// A tab's `NavigationStack` with the shared route destinations and in-app link handling.
 struct RoutedStack<Root: View>: View {
     @Bindable var router: Router
     @ViewBuilder var root: Root
@@ -76,12 +73,15 @@ struct RoutedStack<Root: View>: View {
 }
 
 struct RouteDestination: View {
+    @Environment(FeedLibrary.self) private var library
     let route: Route
 
     var body: some View {
         switch route {
         case .feed(let query):
             FeedScreen(query: query)
+        case .tag(let tag):
+            FeedScreen(query: FeedQuery(stream: library.defaultStream, tags: tag))
         case .user(let name):
             ProfileScreen(name: name)
         case .item(let id):

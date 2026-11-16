@@ -11,7 +11,6 @@ extension Color {
 
     static let pr0Orange = Color(hex: 0xEE4D2E)
     static let pr0Background = Color(hex: 0x161618)
-    /// Top and bottom bars.
     static let pr0Bar = Color(hex: 0x020306)
     static let pr0Pill = Color(hex: 0x252527)
     static let pr0Secondary = Color(hex: 0xA7A7A8)

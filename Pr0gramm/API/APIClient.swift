@@ -1,8 +1,14 @@
 import Foundation
 
+extension Error {
+    var isCancellation: Bool {
+        self is CancellationError || (self as? URLError)?.code == .cancelled
+    }
+}
+
 enum APIError: LocalizedError {
     case http(Int)
-    case server(String)
+    case message(String)
     case notLoggedIn
 
     var errorDescription: String? {
@@ -10,7 +16,7 @@ enum APIError: LocalizedError {
         case .http(429): "Zu viele Anfragen. Bitte kurz warten."
         case .http(403): "Keine Berechtigung."
         case .http(let code): "Serverfehler (\(code))."
-        case .server(let message): message
+        case .message(let message): message
         case .notLoggedIn: "Dafür musst du angemeldet sein."
         }
     }
@@ -21,7 +27,7 @@ enum APIError: LocalizedError {
 final class APIClient {
     static let shared = APIClient()
 
-    private let base = URL(string: "https://pr0gramm.com/api/")!
+    private let base = Site.api
     private let session: URLSession
     private let decoder = JSONDecoder()
 
@@ -36,13 +42,13 @@ final class APIClient {
 
     // MARK: Transport
 
-    func get<T: Decodable>(_ path: String, _ query: [String: String?] = [:]) async throws -> T {
+    private func get<T: Decodable>(_ path: String, _ query: [String: String?] = [:]) async throws -> T {
         var url = base.appending(path: path)
         url.append(queryItems: query.compactMap { key, value in value.map { URLQueryItem(name: key, value: $0) } })
         return try await send(URLRequest(url: url))
     }
 
-    func post<T: Decodable>(_ path: String, _ form: [String: String]) async throws -> T {
+    private func post<T: Decodable>(_ path: String, _ form: [String: String]) async throws -> T {
         var request = URLRequest(url: base.appending(path: path))
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded; charset=utf-8", forHTTPHeaderField: "Content-Type")
@@ -59,7 +65,7 @@ final class APIClient {
         let (data, response) = try await session.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             if let body = try? decoder.decode(ServerError.self, from: data), let message = body.message {
-                throw APIError.server(message)
+                throw APIError.message(message)
             }
             throw APIError.http(http.statusCode)
         }
@@ -80,7 +86,7 @@ final class APIClient {
         params["older"] = older.map(String.init)
         params["id"] = id.map(String.init)
         let response: FeedResponse = try await get("items/get", params)
-        if let error = response.error { throw APIError.server(Self.describe(feedError: error)) }
+        if let error = response.error { throw APIError.message(Self.describe(feedError: error)) }
         return response
     }
 
@@ -128,7 +134,7 @@ final class APIClient {
     }
 }
 
-enum VoteTarget: String {
+enum VoteTarget: String, CaseIterable {
     case item = "items"
     case comment = "comments"
     case tag = "tags"

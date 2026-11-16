@@ -1,13 +1,11 @@
 import SwiftUI
 
-/// Sheet for writing a comment, or a reply when `replyingTo` is set.
 struct CommentComposer: View {
     @Environment(Session.self) private var session
     @Environment(\.dismiss) private var dismiss
     let itemId: Int
     let parentId: Int
     let replyingTo: String?
-    /// Called with the item's updated comment list after posting.
     let onPosted: ([Comment]?) -> Void
 
     @State private var text = ""
@@ -28,12 +26,8 @@ struct CommentComposer: View {
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.pr0Background)
-            .navigationTitle(replyingTo.map { "Antwort an \($0)" } ?? "Kommentar")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .pr0FormBackground()
+            .inlineNavigationTitle(replyingTo.map { "Antwort an \($0)" } ?? "Kommentar")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen", role: .cancel) { dismiss() }

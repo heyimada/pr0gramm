@@ -1,7 +1,6 @@
 import AVKit
 import SwiftUI
 
-/// Displays an item's image or looping video, sized to its aspect ratio.
 struct MediaView: View {
     let item: FeedItem
     let isActive: Bool
@@ -32,7 +31,7 @@ struct MediaView: View {
                 .accessibilityLabel("Bild vergrößern")
                 #if os(iOS)
                 .fullScreenCover(isPresented: $showsViewer) {
-                    ZoomableImageViewer(url: item.fullsizeURL ?? item.mediaURL, aspectRatio: item.aspectRatio)
+                    ZoomableImageViewer(url: item.bestURL, aspectRatio: item.aspectRatio)
                 }
                 #endif
         }
@@ -44,36 +43,6 @@ struct MediaView: View {
         #else
         showsViewer = true
         #endif
-    }
-}
-
-struct RemoteImage: View {
-    let url: URL
-
-    var body: some View {
-        AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.2))) { phase in
-            switch phase {
-            case .success(let image):
-                image.resizable().scaledToFit()
-            case .failure:
-                Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary)
-            default:
-                ProgressView()
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-/// Owns an `AVQueuePlayer` that loops a single video.
-@Observable
-final class LoopingPlayer {
-    let player = AVQueuePlayer()
-    @ObservationIgnored private var looper: AVPlayerLooper?
-
-    init(url: URL, muted: Bool) {
-        looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
-        player.isMuted = muted
     }
 }
 
@@ -92,7 +61,7 @@ final class VideoPlayback {
 }
 
 struct LoopingVideoView: View {
-    @Environment(Session.self) private var session
+    @Environment(PlaybackSettings.self) private var playbackSettings
     let item: FeedItem
     let isActive: Bool
     let playback: VideoPlayback
@@ -123,15 +92,14 @@ struct LoopingVideoView: View {
         .onChange(of: isActive, initial: true) { update() }
     }
 
-    /// Plays while this page is the visible one; tears the player down when it isn't to save memory.
     private func update() {
-        guard isActive, session.autoplayVideos || playback.userStarted else {
+        guard isActive, playbackSettings.autoplayVideos || playback.userStarted else {
             playback.looping?.player.pause()
             if !isActive { playback.stop() }
             return
         }
         if playback.looping == nil {
-            playback.looping = LoopingPlayer(url: item.mediaURL, muted: session.startMuted && !playback.userStarted)
+            playback.looping = LoopingPlayer(url: item.mediaURL, muted: playbackSettings.startMuted && !playback.userStarted)
         }
         playback.looping?.player.play()
     }

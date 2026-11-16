@@ -2,13 +2,15 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(Session.self) private var session
+    @Environment(PlaybackSettings.self) private var playback
     @Environment(DownloadStore.self) private var downloads
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @Environment(\.dismiss) private var dismiss
     @State private var confirmsDeleteAll = false
 
     var body: some View {
         @Bindable var session = session
+        @Bindable var playback = playback
         NavigationStack {
             Form {
                 Section {
@@ -21,7 +23,7 @@ struct SettingsView: View {
                         FeedSettingsView()
                     } label: {
                         LabeledContent {
-                            Text(app.title(for: app.defaultSource(for: session.flags)))
+                            Text(library.title(for: library.effectiveDefaultSource))
                         } label: {
                             Label("Feeds", systemImage: "square.stack")
                         }
@@ -29,10 +31,12 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    flagToggle("SFW", "Safe for work", .sfw)
-                    flagToggle("NSFW", "Nackte Haut, Pornos und leicht offensiver Kram", .nsfw)
-                    flagToggle("NSFL", "Alles. Gewalt, ekliger Scheiß", .nsfl)
-                    flagToggle("POL", "Politik, Wirtschaft, Kriminalität, Konflikte", .pol)
+                    ForEach(ContentFlags.filters, id: \.title) { filter in
+                        Toggle(isOn: session.filterBinding(filter.flag)) {
+                            Text(filter.title)
+                            Text(filter.subtitle)
+                        }
+                    }
                     Toggle(isOn: $session.resetsFlagsOnLaunch) {
                         Text("Beim Start auf SFW zurücksetzen")
                         Text("Nach jedem Neustart der App ist nur SFW an")
@@ -47,8 +51,25 @@ struct SettingsView: View {
                 .disabled(!session.isLoggedIn)
 
                 Section("Videos") {
-                    Toggle("Automatisch abspielen", isOn: $session.autoplayVideos)
-                    Toggle("Stumm starten", isOn: $session.startMuted)
+                    Toggle("Automatisch abspielen", isOn: $playback.autoplayVideos)
+                    Toggle("Stumm starten", isOn: $playback.startMuted)
+                }
+
+                Section {
+                    Toggle(isOn: $playback.reelsShowWhole.animation()) {
+                        Text("Ganz anzeigen")
+                        Text("Mit Rändern statt beschnitten. Aufziehen füllt den Bildschirm, zusammenziehen zeigt wieder alles.")
+                    }
+                    if playback.reelsShowWhole {
+                        LabeledContent("Trotzdem füllen bis") {
+                            Text("\(Int((playback.reelsFillTolerance * 100).rounded())) % beschnitten").monospacedDigit()
+                        }
+                        Slider(value: $playback.reelsFillTolerance, in: PlaybackSettings.fillToleranceRange, step: 0.01)
+                    }
+                } header: {
+                    Text("Reels")
+                } footer: {
+                    Text("Passt ein Post fast genau auf den Bildschirm, füllt er ihn trotzdem, solange höchstens so viel abgeschnitten wird.")
                 }
 
                 Section("Downloads") {
@@ -63,12 +84,8 @@ struct SettingsView: View {
                     Text("Inoffizieller Client. Nicht mit pr0gramm.com verbunden.")
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.pr0Background)
-            .navigationTitle("Einstellungen")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .pr0FormBackground()
+            .inlineNavigationTitle("Einstellungen")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig", role: .confirm) { dismiss() }
@@ -77,17 +94,6 @@ struct SettingsView: View {
             .confirmationDialog("Alle Downloads löschen?", isPresented: $confirmsDeleteAll, titleVisibility: .visible) {
                 Button("Löschen", role: .destructive) { downloads.deleteAll() }
             }
-        }
-    }
-
-    private func flagToggle(_ title: String, _ subtitle: String, _ flag: ContentFlags) -> some View {
-        Toggle(isOn: Binding {
-            session.flags.contains(flag)
-        } set: { isOn in
-            if isOn { session.selectedFlags.insert(flag) } else { session.selectedFlags.remove(flag) }
-        }) {
-            Text(title)
-            Text(subtitle)
         }
     }
 }

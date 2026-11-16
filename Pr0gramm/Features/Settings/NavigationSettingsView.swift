@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Choose and order the tabs in the tab bar.
 struct NavigationSettingsView: View {
     @Environment(AppState.self) private var app
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -59,12 +58,8 @@ struct NavigationSettingsView: View {
             }
         }
         .environment(\.editMode, .constant(.active))
-        .scrollContentBackground(.hidden)
-        .background(Color.pr0Background)
-        .navigationTitle("Navigation")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .pr0FormBackground()
+        .inlineNavigationTitle("Navigation")
     }
 
     private func row(_ tab: AppTab) -> some View {

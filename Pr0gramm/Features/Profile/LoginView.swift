@@ -68,12 +68,8 @@ struct LoginView: View {
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.pr0Background)
-            .navigationTitle("Anmelden")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .pr0FormBackground()
+            .inlineNavigationTitle("Anmelden")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen", role: .cancel) { dismiss() }
@@ -94,7 +90,7 @@ struct LoginView: View {
         captcha = nil
         captchaText = ""
         do {
-            captcha = try await session.captcha()
+            captcha = try await APIClient.shared.captcha()
         } catch {
             self.error = error
         }

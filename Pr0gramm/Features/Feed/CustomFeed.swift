@@ -9,29 +9,29 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     var stream: FeedStream = .top
     /// Content filters the feed is bound to; empty means always shown.
     var flags: ContentFlags = []
-    /// Hidden everywhere until unlocked with Face ID, see `AppState.unlockProtectedFeeds()`.
+    /// Hidden everywhere until unlocked with Face ID, see `FeedLibrary.unlockProtectedFeeds()`.
     var isProtected = false
 
     /// Shown only while every active filter is one of its own, e.g. an NSFW-bound feed while NSFW
     /// is the only filter on, but not with SFW on as well.
     func isVisible(with active: ContentFlags) -> Bool {
-        let switchable: ContentFlags = [.sfw, .nsfw, .nsfl, .pol]
-        return flags.isEmpty || flags.isSuperset(of: active.intersection(switchable))
+        flags.isEmpty || flags.isSuperset(of: active.intersection(.switchable))
     }
 
     var query: FeedQuery {
         let tags = tags.trimmingCharacters(in: .whitespaces)
-        // Excluding tags only works in the extended syntax, which starts with "!".
-        let needsExtended = !tags.hasPrefix("!") && tags.split(whereSeparator: \.isWhitespace).contains { $0.hasPrefix("-") }
+        let parsed = TagQuery(tags)
+        let needsExtended = !parsed.isExtended && TagQuery.needsExtended(parsed.words)
         return FeedQuery(stream: stream, tags: needsExtended ? "! " + tags : tags)
     }
 
-    /// A feed prefilled from a tag search, named after its tags.
+    static func defaultName(forTags tags: String) -> String {
+        TagQuery(tags).body
+    }
+
     init(query: FeedQuery) {
         let tags = query.tags ?? ""
-        var name = tags
-        if name.hasPrefix("!") { name.removeFirst() }
-        self.name = name.trimmingCharacters(in: .whitespaces)
+        self.name = Self.defaultName(forTags: tags)
         self.tags = tags
         stream = query.stream
     }
@@ -58,7 +58,6 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     }
 }
 
-/// One entry of the Feed tab's switcher and of the "Standard-Feed" setting.
 nonisolated enum FeedSource: Hashable, Codable, Sendable {
     case stream(FeedStream)
     case custom(CustomFeed.ID)

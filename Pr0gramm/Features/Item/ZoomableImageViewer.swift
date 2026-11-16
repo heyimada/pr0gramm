@@ -1,7 +1,6 @@
 import SwiftUI
 
 #if os(iOS)
-/// Full-screen image viewer with pinch-to-zoom, panning and double-tap zoom.
 struct ZoomableImageViewer: View {
     @Environment(\.dismiss) private var dismiss
     let url: URL
@@ -51,7 +50,6 @@ struct ZoomableImageViewer: View {
                     offset = CGSize(width: committedOffset.width + value.translation.width,
                                     height: committedOffset.height + value.translation.height)
                 } else {
-                    // Not zoomed: drag down to dismiss.
                     offset = CGSize(width: 0, height: max(0, value.translation.height))
                 }
             }

@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// The orange `>_` terminal logo.
 struct Pr0Logo: View {
     var size: CGFloat = 30
 
@@ -25,7 +24,6 @@ struct Pr0Logo: View {
     }
 }
 
-/// Round initials avatar, e.g. "MU" for MUSE or "Cu" for Cumarin.
 struct Avatar: View {
     let name: String
     var size: CGFloat = 24
@@ -45,7 +43,6 @@ struct Avatar: View {
     }
 }
 
-/// Small dot in the user's rank color.
 struct MarkDot: View {
     let mark: Int
     var size: CGFloat = 8
@@ -67,7 +64,6 @@ struct OPBadge: View {
     }
 }
 
-/// Benis, or a crossed-out eye while the score is still hidden.
 struct ScoreView: View {
     let score: Int
     let created: Date
@@ -84,52 +80,30 @@ struct ScoreView: View {
     }
 }
 
-/// Circled ⊕ / ⊖ buttons. Guests are asked to log in instead.
-struct VoteButtons: View {
-    @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
-    let target: VoteTarget
-    let id: Int
-    var size: CGFloat = 20
-    var axis: Axis = .vertical
-
-    @State private var failed = false
+struct TagCapsule<Content: View>: View {
+    var tint: Color?
+    @ViewBuilder let content: Content
 
     var body: some View {
-        let vote = session.vote(for: target, id: id)
-        let layout = axis == .vertical
-            ? AnyLayout(VStackLayout(spacing: size * 0.3))
-            : AnyLayout(HStackLayout(spacing: size * 0.4))
-        layout {
-            button(value: 1, current: vote, symbol: "plus.circle", label: "Plus")
-            button(value: -1, current: vote, symbol: "minus.circle", label: "Minus")
-        }
-        .alert("Abstimmen fehlgeschlagen", isPresented: $failed) {}
-    }
-
-    private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
-        let active = current == value
-        return Button {
-            guard session.isLoggedIn else { return app.showsLogin = true }
-            Task {
-                do { try await session.vote(target, id: id, value: active ? 0 : value) } catch { failed = true }
+        content
+            .font(.subheadline)
+            .foregroundStyle(Color.pr0Text)
+            .lineLimit(1)
+            .padding(.horizontal, 12)
+            .frame(height: 32)
+            .background(Color.pr0Pill, in: .capsule)
+            .overlay {
+                if let tint { Capsule().strokeBorder(tint, lineWidth: 1.5) }
             }
-        } label: {
-            Image(systemName: active ? "\(symbol).fill" : symbol)
-                .resizable()
-                .fontWeight(.light)
-                .frame(width: size, height: size)
-                .foregroundStyle(active ? Color.pr0Orange : Color.pr0Secondary)
-                .contentShape(.rect.inset(by: -6))
-        }
-        .buttonStyle(.plain)
-        .sensoryFeedback(.selection, trigger: active)
-        .accessibilityLabel(label)
-        .accessibilityAddTraits(active ? .isSelected : [])
     }
 }
 
-/// Glass capsule segmented control, e.g. "beliebt · neu · müll" above a tag feed.
+extension TagCapsule where Content == Text {
+    init(_ text: String, tint: Color? = nil) {
+        self.init(tint: tint) { Text(text) }
+    }
+}
+
 struct SegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
@@ -139,7 +113,6 @@ struct SegmentCapsule<Value: Hashable>: View {
     @Namespace private var namespace
 
     var body: some View {
-        // Scrolls sideways once saved feeds no longer fit next to the streams.
         ViewThatFits(in: .horizontal) {
             segments
             ScrollViewReader { proxy in
@@ -189,13 +162,14 @@ struct SegmentCapsule<Value: Hashable>: View {
     }
 }
 
-/// A `SegmentCapsule` that shrinks into a pill with just the selected title while collapsed,
-/// the way the tab bar minimizes on scroll. Tapping the pill expands it again.
+private let capsuleGlassID = "capsule"
+
 struct CollapsingSegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
     let title: (Value) -> String
     let isCollapsed: Bool
+    let collapsedHint: String
     let onExpand: () -> Void
     @Namespace private var glass
 
@@ -218,8 +192,8 @@ struct CollapsingSegmentCapsule<Value: Hashable>: View {
                 }
                 .buttonStyle(.plain)
                 .glassEffect(.regular.interactive(), in: .capsule)
-                .glassEffectID("capsule", in: glass)
-                .accessibilityLabel("\(title(selection)), Feeds anzeigen")
+                .glassEffectID(capsuleGlassID, in: glass)
+                .accessibilityLabel("\(title(selection)), \(collapsedHint)")
             } else {
                 SegmentCapsule(options: options, selection: $selection, title: title, glassNamespace: glass)
             }
@@ -234,7 +208,7 @@ private struct GlassID: ViewModifier {
 
     func body(content: Content) -> some View {
         if let namespace {
-            content.glassEffectID("capsule", in: namespace)
+            content.glassEffectID(capsuleGlassID, in: namespace)
         } else {
             content
         }
@@ -243,7 +217,6 @@ private struct GlassID: ViewModifier {
 #endif
 
 extension View {
-    /// Section heading with a trailing hairline, like "Hochlads ───".
     func pr0SectionHeader() -> some View {
         HStack(spacing: 10) {
             self.font(.footnote).foregroundStyle(Color.pr0Secondary)
@@ -252,7 +225,6 @@ extension View {
     }
 }
 
-/// Full-screen error state with a retry button.
 struct ErrorView: View {
     let error: Error
     let retry: () async -> Void
@@ -268,5 +240,71 @@ struct ErrorView: View {
         }
         .padding(32)
         .frame(maxWidth: .infinity)
+    }
+}
+
+struct RemoteImage: View {
+    let url: URL
+
+    var body: some View {
+        AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.2))) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFit()
+            case .failure:
+                Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary)
+            default:
+                ProgressView()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct ActionPillLabel: View {
+    let title: String
+    let symbol: String
+    var tint: Color = .pr0Text
+
+    var body: some View {
+        Label(title, systemImage: symbol)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 14)
+            .frame(height: 38)
+            .background(Color.pr0Pill, in: .capsule)
+            .contentShape(.capsule)
+    }
+}
+
+extension View {
+    func glassCircle() -> some View {
+        #if os(visionOS)
+        glassBackgroundEffect(in: .circle)
+        #else
+        glassEffect(.regular, in: .circle)
+        #endif
+    }
+
+    func glassCapsule() -> some View {
+        #if os(visionOS)
+        glassBackgroundEffect(in: .capsule)
+        #else
+        glassEffect(.regular, in: .capsule)
+        #endif
+    }
+}
+
+extension View {
+    func inlineNavigationTitle(_ title: String) -> some View {
+        #if os(iOS)
+        navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+        #else
+        navigationTitle(title)
+        #endif
+    }
+
+    func pr0FormBackground() -> some View {
+        scrollContentBackground(.hidden).background(Color.pr0Background)
     }
 }

@@ -9,60 +9,82 @@ final class FeedModel {
     private(set) var items: [FeedItem] = []
     private(set) var isLoading = false
     private(set) var atEnd = false
+    private(set) var pagingFailed = false
     private(set) var error: Error?
 
-    @ObservationIgnored private let api: APIClient
     @ObservationIgnored private var loadedFlags: ContentFlags?
+    /// Bumped when a reload replaces `items`; a page load that started before is discarded.
+    @ObservationIgnored private var listVersion = 0
+    @ObservationIgnored private var latestReload = 0
 
-    init(query: FeedQuery, api: APIClient = .shared) {
+    init(query: FeedQuery) {
         self.query = query
-        self.api = api
     }
 
-    /// A fixed list, e.g. the "Top 10 heute" rail, so it can be opened in the pager.
     init(items: [FeedItem], query: FeedQuery) {
         self.query = query
-        self.api = .shared
         self.items = items
         atEnd = true
     }
 
-    /// Loads the first page, or reloads if the content filter changed since the last load.
     func loadIfNeeded(flags: ContentFlags) async {
         guard items.isEmpty || loadedFlags != flags else { return }
         await reload(flags: flags)
     }
 
     func reload(flags: ContentFlags) async {
+        latestReload += 1
+        let reload = latestReload
         do {
-            let response = try await api.items(query, flags: flags)
+            let response = try await APIClient.shared.items(query, flags: flags)
+            guard reload == latestReload else { return }
+            listVersion += 1
             items = response.items
             atEnd = response.atEnd
             loadedFlags = flags
             error = nil
-        } catch is CancellationError {
+            pagingFailed = false
+        } catch where error.isCancellation {
         } catch {
+            guard reload == latestReload else { return }
             self.error = error
         }
     }
 
     func loadMore(flags: ContentFlags) async {
         guard !isLoading, !atEnd, let last = items.last else { return }
+        let version = listVersion
         isLoading = true
+        pagingFailed = false
         defer { isLoading = false }
         do {
-            let response = try await api.items(query, flags: flags, older: query.cursor(for: last))
+            let response = try await APIClient.shared.items(query, flags: flags, older: query.cursor(for: last))
+            guard version == listVersion else { return }
             let known = Set(items.map(\.id))
             items.append(contentsOf: response.items.filter { !known.contains($0.id) })
             atEnd = response.atEnd || response.items.isEmpty
+        } catch where error.isCancellation {
         } catch {
-            // Paging errors are silent; the next scroll attempt retries.
+            guard version == listVersion else { return }
+            pagingFailed = true
         }
     }
 
-    /// Triggers paging when `item` is close to the end of the list.
-    func loadMoreIfNeeded(after item: FeedItem, flags: ContentFlags) async {
+    /// Starts the next page without tying it to the caller's task: lazy stacks cancel a page's
+    /// task when it scrolls away, and a cancelled page load would never be asked for again.
+    func loadMoreIfNeeded(after item: FeedItem, flags: ContentFlags) {
         guard let index = items.firstIndex(of: item), index >= items.count - 12 else { return }
-        await loadMore(flags: flags)
+        Task { await loadMore(flags: flags) }
+    }
+}
+
+final class FeedCache {
+    private var models: [FeedQuery: FeedModel] = [:]
+
+    func model(for query: FeedQuery) -> FeedModel {
+        if let model = models[query] { return model }
+        let model = FeedModel(query: query)
+        models[query] = model
+        return model
     }
 }

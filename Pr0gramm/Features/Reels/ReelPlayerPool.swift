@@ -1,8 +1,6 @@
 import Foundation
 import Observation
 
-/// Keeps players for the visible reel and the next one, so swiping on starts instantly.
-/// Everything further away is released to keep memory flat.
 @Observable
 final class ReelPlayerPool {
     private(set) var players: [Int: LoopingPlayer] = [:]

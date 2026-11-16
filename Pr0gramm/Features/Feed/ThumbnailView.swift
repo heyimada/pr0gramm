@@ -3,6 +3,18 @@ import SwiftUI
 struct ThumbnailView: View {
     let item: FeedItem
 
+    #if os(visionOS)
+    static let spacing: CGFloat = 8
+    #else
+    static let spacing: CGFloat = 2
+    #endif
+
+    static func thumbnailColumns(compact: Bool) -> [GridItem] {
+        compact
+            ? Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3)
+            : [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: spacing)]
+    }
+
     var body: some View {
         Color.pr0Pill
             .aspectRatio(1, contentMode: .fit)

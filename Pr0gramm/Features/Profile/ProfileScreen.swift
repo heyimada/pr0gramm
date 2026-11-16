@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// A user's profile with their uploads.
 struct ProfileScreen: View {
     @Environment(Session.self) private var session
     let name: String
@@ -29,7 +28,7 @@ struct ProfileScreen: View {
         do {
             profile = try await APIClient.shared.profile(name, flags: session.flags)
             error = nil
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             self.error = error
         }

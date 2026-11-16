@@ -1,33 +1,28 @@
 import SwiftUI
 
-/// Start tab: a feed switcher, the feed's top post of the day as a hero, a "Top 10 heute" rail,
-/// then the rest of the feed. Opens on the default feed (beliebt unless changed in the settings).
 struct HomeScreen: View {
-    @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @State private var cache = FeedCache()
-    /// `nil` until the user picks a feed, so Start follows changes to the default feed.
     @State private var selection: FeedSource?
 
-    /// Posts from the last 24 hours with visible scores, best first. Falls back to all loaded posts.
-    private func ranked(_ feed: FeedModel) -> [FeedItem] {
+    private func ranked(_ feed: FeedModel) -> (items: [FeedItem], isToday: Bool) {
         let cutoff = Date(timeIntervalSinceNow: -86_400)
         let visible = feed.items.filter { !$0.createdAt.isScoreHidden }
         let today = visible.filter { $0.createdAt > cutoff }
-        return (today.count >= 5 ? today : visible).sorted { $0.score > $1.score }
+        let isToday = today.count >= 5
+        return ((isToday ? today : visible).sorted { $0.score > $1.score }, isToday)
     }
 
     private var sources: [FeedSource] {
-        app.feedSources(for: session.flags, includesSubscriptions: session.isLoggedIn)
+        library.sources(withSubscriptions: true)
     }
 
     private var source: FeedSource {
-        let source = selection ?? app.defaultSource(for: session.flags)
-        return sources.contains(source) ? source : .stream(.top)
+        library.currentSource(picked: selection, in: sources)
     }
 
     private var sectionTitle: String {
-        switch (app.query(for: source) ?? .top).stream {
+        switch library.query(for: source).stream {
         case .top: "Frisch beliebt"
         case .new: "Frisch hochgeladen"
         case .junk: "Frischer Müll"
@@ -35,27 +30,28 @@ struct HomeScreen: View {
         }
     }
 
-    /// Custom feeds name themselves above the heading; the streams' names are in it already.
     private var sectionKicker: String {
-        if case .custom = source { return app.title(for: source) }
+        if case .custom = source { return library.title(for: source) }
         return "Alle Posts"
     }
 
     var body: some View {
-        let query = app.query(for: source) ?? .top
+        let query = library.query(for: source)
         let feed = cache.model(for: query)
-        let top = Array(ranked(feed).prefix(11))
+        let (rankedItems, isToday) = ranked(feed)
+        let top = Array(rankedItems.prefix(11))
         let topModel = FeedModel(items: top, query: query)
         FeedGrid(model: feed, showsBackground: false) {
             VStack(alignment: .leading, spacing: 28) {
                 SegmentCapsule(options: sources, selection: Binding(get: { source }, set: { selection = $0 }),
-                               title: app.title(for:))
+                               title: library.title(for:))
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 16)
                 if let hero = top.first {
-                    HeroCard(item: hero, route: .pager(PagerRoute(model: topModel, itemID: hero.id, transitionNamespace: nil)))
+                    HeroCard(item: hero, isToday: isToday, route: .pager(PagerRoute(model: topModel, itemID: hero.id, transitionNamespace: nil)))
+                        .id(hero.id)
                     if top.count > 1 {
-                        TopRail(items: Array(top.dropFirst()), model: topModel)
+                        TopRail(items: Array(top.dropFirst()), isToday: isToday, model: topModel)
                     }
                     SectionTitle(kicker: sectionKicker, title: sectionTitle)
                 }
@@ -84,7 +80,6 @@ struct SectionTitle: View {
     }
 }
 
-/// The hero post, blurred and huge, behind the whole screen.
 private struct AmbientBackdrop: View {
     let url: URL?
 
@@ -107,14 +102,22 @@ private struct AmbientBackdrop: View {
 
 private struct HeroCard: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(PlaybackSettings.self) private var playback
+    @Environment(Session.self) private var session
     let item: FeedItem
+    let isToday: Bool
     let route: Route
-    @State private var info: ItemInfo?
+    @State private var details: ItemDetails
     @State private var looping: LoopingPlayer?
 
-    private var tags: [Tag] {
-        (info?.tags ?? []).sorted { $0.confidence > $1.confidence }
+    init(item: FeedItem, isToday: Bool, route: Route) {
+        self.item = item
+        self.isToday = isToday
+        self.route = route
+        _details = State(initialValue: ItemDetails(itemID: item.id))
     }
+
+    private var tags: [Tag] { details.info?.tags ?? [] }
 
     var body: some View {
         NavigationLink(value: route) {
@@ -125,7 +128,7 @@ private struct HeroCard: View {
                                        .init(color: .black.opacity(0.6), location: 0.65),
                                        .init(color: .black.opacity(0.92), location: 1)],
                                startPoint: .top, endPoint: .bottom)
-                details.padding(20)
+                caption.padding(20)
             }
             // Portrait on phones; wide on regular-width screens like the opened iPhone Duo, so the
             // rail below still shows.
@@ -136,9 +139,9 @@ private struct HeroCard: View {
         }
         .buttonStyle(CardPressStyle())
         .padding(.horizontal, 16)
-        .task(id: item.id) { info = try? await APIClient.shared.itemInfo(item.id) }
+        .task { await details.loadIfNeeded() }
         .onAppear {
-            guard item.isVideo, looping == nil else { return }
+            guard item.isVideo, playback.autoplayVideos, looping == nil else { return }
             looping = LoopingPlayer(url: item.mediaURL, muted: true)
             looping?.player.play()
         }
@@ -155,7 +158,7 @@ private struct HeroCard: View {
                 if item.isVideo {
                     ZStack {
                         AsyncImage(url: item.thumbnailURL) { $0.resizable().scaledToFill() } placeholder: { Color.clear }
-                        PlayerLayerView(player: looping?.player, gravity: .resizeAspectFill)
+                        PlayerLayerView(player: looping?.player)
                     }
                 } else {
                     AsyncImage(url: item.mediaURL) { $0.resizable().scaledToFill() } placeholder: {
@@ -168,9 +171,9 @@ private struct HeroCard: View {
         }
     }
 
-    private var details: some View {
+    private var caption: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Nr. 1 heute".uppercased())
+            Text((isToday ? "Nr. 1 heute" : "Nr. 1").uppercased())
                 .font(.caption.weight(.bold))
                 .tracking(2)
                 .foregroundStyle(Color.pr0Orange)
@@ -181,7 +184,7 @@ private struct HeroCard: View {
             HStack(spacing: 6) {
                 Text(item.user)
                 Text("·")
-                Text("\(item.score.formatted()) Benis")
+                Text("\(session.score(of: item).formatted()) Benis")
                 Text("·")
                 Text(item.createdAt.pr0Age)
             }
@@ -214,14 +217,14 @@ private struct HeroCard: View {
     }
 }
 
-/// Horizontal rail of the next best posts with big rank numerals.
 private struct TopRail: View {
     let items: [FeedItem]
+    let isToday: Bool
     let model: FeedModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(kicker: "Trending", title: "Top 10 heute")
+            SectionTitle(kicker: "Trending", title: isToday ? "Top 10 heute" : "Top 10")
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
@@ -241,6 +244,7 @@ private struct TopRail: View {
 }
 
 private struct RailCard: View {
+    @Environment(Session.self) private var session
     let item: FeedItem
     let rank: Int
 
@@ -264,7 +268,7 @@ private struct RailCard: View {
                     .foregroundStyle(Color.pr0Orange)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(item.user).font(.subheadline.weight(.semibold)).lineLimit(1)
-                    Text("\(item.score.formatted()) Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
+                    Text("\(session.score(of: item).formatted()) Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
                 }
             }
             .frame(width: 170, alignment: .leading)
@@ -273,7 +277,6 @@ private struct RailCard: View {
     }
 }
 
-/// Slight shrink and fade while a card is pressed.
 struct CardPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

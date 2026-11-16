@@ -1,0 +1,21 @@
+customFeeds [{"id":"8F718422-5E07-435B-B28A-DBA584288632","name":"Katzen","tags":"kadse -süßvieh","stream":"new","flags":0,"isProtected":false}]
+defaultFeed {"custom":{"_0":"8F718422-5E07-435B-B28A-DBA584288632"}}
+reelsFilter {"onlyVideos":false,"includedTags":["kadse"],"excludedTags":["hund"]}
+votes {"items":{"42":1},"comments":{},"tags":{}}
+{
+  "autoplayVideos" => false
+  "contentFlags" => 3
+  "recentSearches" => "kadse
+fogel"
+  "resetsFlagsOnLaunch" => false
+  "startMuted" => false
+  "syncOffset" => 17
+  "tabOrder.v2" => [
+    0 => "home"
+    1 => "feed"
+    2 => "reels"
+    3 => "downloads"
+    4 => "search"
+  ]
+}
+index.json [{"item":{"id":42,"promoted":7,"userId":3,"up":10,"down":2,"created":1700000000,"image":"2024/a.png","thumb":"2024/a.jpg","fullsize":"","preview":null,"width":640,"height":640,"audio":false,"source":null,"flags":1,"user":"cha0s","mark":2,"variants":null},"fileName":"42.png","date":721000000}]

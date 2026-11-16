@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Toolbar of every tab root: logo on the left, content filter and account on the right.
 struct MainToolbar: ToolbarContent {
     var body: some ToolbarContent {
         #if os(iOS)
@@ -10,78 +9,20 @@ struct MainToolbar: ToolbarContent {
         .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .topBarTrailing) {
             HStack(spacing: 12) {
-                FilterMenu()
+                FilterMenu { BarCircle { Image(systemName: "line.3.horizontal.decrease") } }
                 AccountItem()
             }
         }
         .sharedBackgroundVisibility(.hidden)
         #else
-        ToolbarItem(placement: .primaryAction) { FilterMenu() }
+        ToolbarItem(placement: .primaryAction) {
+            FilterMenu { BarCircle { Image(systemName: "line.3.horizontal.decrease") } }
+        }
         ToolbarItem(placement: .primaryAction) { AccountItem() }
         #endif
     }
 }
 
-/// SFW / NSFW / NSFL / POL toggles in a native menu.
-struct FilterMenu: View {
-    @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
-    /// A bare white icon for overlays like the Reels header, instead of the toolbar circle.
-    var plain = false
-
-    private let flags: [(ContentFlags, String)] = [
-        (.sfw, "SFW"), (.nsfw, "NSFW"), (.nsfl, "NSFL"), (.pol, "POL"),
-    ]
-
-    var body: some View {
-        Menu {
-            if session.isLoggedIn {
-                ForEach(flags, id: \.1) { flag, title in
-                    Toggle(title, isOn: binding(for: flag))
-                }
-            } else {
-                Section("Ohne Anmeldung gibt es nur SFW.") {
-                    Button("Anmelden", systemImage: "person.crop.circle") { app.showsLogin = true }
-                }
-            }
-            if app.hasProtectedFeeds {
-                Section {
-                    if app.protectedFeedsUnlocked {
-                        Button("Geschützte Feeds sperren", systemImage: "lock") { app.lockProtectedFeeds() }
-                    } else {
-                        Button("Geschützte Feeds entsperren", systemImage: "lock.open") {
-                            Task { await app.unlockProtectedFeeds() }
-                        }
-                    }
-                }
-            }
-        } label: {
-            Group {
-                if plain {
-                    Image(systemName: "line.3.horizontal.decrease")
-                        .font(.system(size: 21, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 44, height: 44)
-                        .contentShape(.rect)
-                } else {
-                    BarCircle { Image(systemName: "line.3.horizontal.decrease") }
-                }
-            }
-            .accessibilityLabel("Filter")
-        }
-        .menuActionDismissBehavior(.disabled)
-    }
-
-    private func binding(for flag: ContentFlags) -> Binding<Bool> {
-        Binding {
-            session.flags.contains(flag)
-        } set: { isOn in
-            if isOn { session.selectedFlags.insert(flag) } else { session.selectedFlags.remove(flag) }
-        }
-    }
-}
-
-/// Avatar menu when logged in, otherwise a login button.
 struct AccountItem: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
@@ -91,7 +32,7 @@ struct AccountItem: View {
         if let name = session.userName {
             Menu {
                 Section {
-                    Button("Mein Profil", systemImage: "person") { app.open(.user(name)) }
+                    Button("Mein Profil", systemImage: "person") { app.router.push(.user(name)) }
                 } header: {
                     if let score = session.userScore {
                         Text("\(name) · \(score.formatted()) Benis")
@@ -121,7 +62,6 @@ struct AccountItem: View {
     }
 }
 
-/// Logo plus "pr0gramm" wordmark for the leading toolbar slot.
 struct Wordmark: View {
     var body: some View {
         HStack(spacing: 8) {

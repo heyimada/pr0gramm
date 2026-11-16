@@ -3,11 +3,18 @@ import SwiftUI
 
 @main
 struct Pr0grammApp: App {
-    @State private var session = Session()
-    @State private var app = AppState()
+    @State private var session: Session
+    @State private var library: FeedLibrary
+    @State private var playback: PlaybackSettings
+    @State private var app: AppState
     @State private var downloads = DownloadStore()
 
     init() {
+        let session = Session()
+        _session = State(initialValue: session)
+        _playback = State(initialValue: PlaybackSettings())
+        _app = State(initialValue: AppState(session: session))
+        _library = State(initialValue: FeedLibrary(session: session))
         // Thumbnails and images are loaded through URLSession.shared (AsyncImage); give it room to cache.
         URLCache.shared = URLCache(memoryCapacity: 64 << 20, diskCapacity: 512 << 20)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
@@ -16,24 +23,17 @@ struct Pr0grammApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environment(session)
-                .environment(app)
-                .environment(downloads)
-                .tint(.pr0Orange)
-                .preferredColorScheme(.dark)
+                .pr0Environment(session: session, app: app, library: library, downloads: downloads, playback: playback)
         }
         #if os(visionOS)
         .defaultSize(width: 1100, height: 800)
         #endif
 
         #if os(visionOS)
-        // Detached media viewer, so a picture or video can be placed and scaled on its own in the room.
         WindowGroup(id: MediaWindow.id, for: FeedItem.self) { $item in
             if let item {
                 MediaWindow(item: item)
-                    .environment(session)
-                    .environment(app)
-                    .environment(downloads)
+                    .pr0Environment(session: session, app: app, library: library, downloads: downloads, playback: playback)
             }
         }
         .windowResizability(.contentSize)
@@ -42,10 +42,25 @@ struct Pr0grammApp: App {
     }
 }
 
-/// System tab bar with one navigation stack per stream, plus a search tab.
+private extension View {
+    func pr0Environment(
+        session: Session, app: AppState, library: FeedLibrary, downloads: DownloadStore, playback: PlaybackSettings
+    ) -> some View {
+        environment(session)
+            .environment(app)
+            .environment(library)
+            .environment(downloads)
+            .environment(playback)
+            .tint(.pr0Orange)
+            .preferredColorScheme(.dark)
+    }
+}
+
 struct RootView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
+    @Environment(DownloadStore.self) private var downloads
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -65,7 +80,6 @@ struct RootView: View {
             }
         }
         #if os(iOS)
-        .tabViewSearchActivation(.searchTabSelection)
         .tabBarMinimizeBehavior(.onScrollDown)
         #else
         .tabViewStyle(.sidebarAdaptable)
@@ -73,12 +87,12 @@ struct RootView: View {
         .onChange(of: tabs, initial: true) {
             if !tabs.contains(app.tab), let first = tabs.first { app.tab = first }
         }
-        .sheet(isPresented: $app.showsLogin) { LoginView() }
         .sheet(isPresented: $app.showsSettings) { SettingsView() }
+        .appPresentations()
         .task { await session.sync() }
         .onChange(of: scenePhase) {
             // Protected feeds need Face ID again after leaving the app.
-            if scenePhase == .background { app.lockProtectedFeeds() }
+            if scenePhase == .background { library.lockProtectedFeeds() }
         }
     }
 }
@@ -91,7 +105,10 @@ private struct TabStack: View {
         RoutedStack(router: app.routers[tab]!) {
             Group {
                 switch tab {
-                case .top, .new, .junk, .subscribed: StreamFeed(stream: tab.stream!)
+                case .top: StreamFeed(stream: .top)
+                case .new: StreamFeed(stream: .new)
+                case .junk: StreamFeed(stream: .junk)
+                case .subscribed: StreamFeed(stream: .subscribed)
                 case .profile: AccountScreen()
                 case .downloads: DownloadsScreen()
                 case .home: HomeScreen()
@@ -108,18 +125,5 @@ private struct TabStack: View {
             #endif
             .toolbar { MainToolbar() }
         }
-    }
-}
-
-/// Root feed of a single-stream tab; keeps its model (and scroll position) for the tab's lifetime.
-private struct StreamFeed: View {
-    @State private var model: FeedModel
-
-    init(stream: FeedStream) {
-        _model = State(initialValue: FeedModel(query: FeedQuery(stream: stream)))
-    }
-
-    var body: some View {
-        FeedGrid(model: model)
     }
 }

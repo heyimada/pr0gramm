@@ -1,34 +1,40 @@
 import SwiftUI
 
-/// One post as laid out on pr0.app: media, vote/info bar, tags, comments. On wide regular-width
-/// pages (iPhone Duo opened in landscape, iPad) the media gets its own column next to the rest.
 struct ItemDetailView: View {
-    @Environment(Session.self) private var session
     @Environment(\.horizontalSizeClass) private var sizeClass
     let item: FeedItem
     let isActive: Bool
     let pageSize: CGSize
     /// Leading and trailing safe-area insets the page spans but must keep its content out of, e.g.
     /// the vertical bar of an iPhone Duo. Backgrounds still run underneath.
-    var sideInsets = EdgeInsets()
-    /// Returns an action moving to the previous (-1) or next (+1) post, if there is one.
-    var step: (Int) -> (() -> Void)? = { _ in nil }
+    let sideInsets: EdgeInsets
+    let previous: (() -> Void)?
+    let next: (() -> Void)?
 
-    @State private var info: ItemInfo?
-    @State private var infoError: Error?
-    @State private var replyTarget: ReplyTarget?
+    @State private var details: ItemDetails
     @State private var playback = VideoPlayback()
+
+    init(item: FeedItem, isActive: Bool, pageSize: CGSize, sideInsets: EdgeInsets = EdgeInsets(),
+         previous: (() -> Void)? = nil, next: (() -> Void)? = nil) {
+        self.item = item
+        self.isActive = isActive
+        self.pageSize = pageSize
+        self.sideInsets = sideInsets
+        self.previous = previous
+        self.next = next
+        _details = State(initialValue: ItemDetails(itemID: item.id))
+    }
 
     private var isSideBySide: Bool {
         sizeClass == .regular && pageSize.width > pageSize.height
     }
 
     var body: some View {
-        Group {
+        // One container rather than a Group, so the modifiers below, the comment composer
+        // among them, belong to the page and survive switching between the two layouts.
+        ZStack {
             if isSideBySide {
                 HStack(spacing: 0) {
-                    // Sized by the space left rather than by the media, so the page can't outgrow the screen.
-                    // Only very tall images scroll; everything else fits the column below the bars.
                     GeometryReader { proxy in
                         ScrollView {
                             media(maxHeight: max(proxy.size.height - (item.sourceURL == nil ? 0 : SourceBar.height), 0))
@@ -40,7 +46,7 @@ struct ItemDetailView: View {
                     .background(Color.black)
 
                     ScrollView {
-                        details
+                        column
                             .padding(.top, 8)
                             .padding(.trailing, sideInsets.trailing)
                     }
@@ -50,27 +56,21 @@ struct ItemDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         media(maxHeight: max(pageSize.height * 0.75, 200), insets: sideInsets)
-                        details.padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
+                        column.padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
                     }
                 }
             }
         }
         .scrollIndicators(.hidden)
         .onDisappear { playback.stop() }
-        .task { await loadInfo() }
-        .sheet(item: $replyTarget) { target in
-            CommentComposer(itemId: item.id, parentId: target.parentId,
-                            replyingTo: target.parentId == 0 ? nil : target.name) { comments in
-                apply(comments)
-            }
-        }
+        .task { await details.load() }
+        .commentComposer(item: item, details: details)
     }
 
-    /// Media and source link, kept clear of `insets` while their backgrounds fill them.
     private func media(maxHeight: CGFloat, insets: EdgeInsets = EdgeInsets()) -> some View {
         VStack(spacing: 0) {
             MediaView(item: item, isActive: isActive, playback: playback, maxHeight: maxHeight)
-                .overlay { StepArrows(previous: step(-1), next: step(1)) }
+                .overlay { StepArrows(previous: previous, next: next) }
                 .padding(.leading, insets.leading)
                 .padding(.trailing, insets.trailing)
                 .background(Color.black)
@@ -84,7 +84,7 @@ struct ItemDetailView: View {
         }
     }
 
-    private var details: some View {
+    private var column: some View {
         VStack(alignment: .leading, spacing: 0) {
             ItemInfoBar(item: item)
                 .padding(.horizontal, 16)
@@ -98,36 +98,17 @@ struct ItemDetailView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let info {
+        if let info = details.info {
             TagsSection(tags: info.tags)
-            CommentsSection(item: item, comments: info.comments,
-                            onComment: { replyTarget = ReplyTarget(parentId: 0, name: item.user) },
-                            onReply: { comment in replyTarget = ReplyTarget(parentId: comment.id, name: comment.name) })
+            CommentsSection(item: item, details: details)
                 .padding(.top, 28)
-        } else if let infoError {
-            ErrorView(error: infoError, retry: loadInfo)
+        } else if let error = details.error {
+            ErrorView(error: error, retry: details.load)
         } else {
             ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
         }
     }
 
-    private func apply(_ comments: [Comment]?) {
-        if let comments, let tags = info?.tags {
-            info = ItemInfo(tags: tags, comments: comments)
-        } else {
-            Task { await loadInfo() }
-        }
-    }
-
-    private func loadInfo() async {
-        do {
-            info = try await APIClient.shared.itemInfo(item.id)
-            infoError = nil
-        } catch is CancellationError {
-        } catch {
-            infoError = error
-        }
-    }
 }
 
 private struct SourceBar: View {
@@ -167,13 +148,6 @@ private struct SourceBar: View {
     }
 }
 
-private struct ReplyTarget: Identifiable {
-    let parentId: Int
-    let name: String
-    var id: Int { parentId }
-}
-
-/// Faint ‹ › buttons on the media's edges for stepping through the feed.
 private struct StepArrows: View {
     let previous: (() -> Void)?
     let next: (() -> Void)?
@@ -203,13 +177,10 @@ private struct StepArrows: View {
     }
 }
 
-/// Uploader row, then a row of actions (vote capsule, share, download) below the media.
 struct ItemInfoBar: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openURL) private var openURL
     let item: FeedItem
-
-    private var link: URL { URL(string: "https://pr0gramm.com/new/\(item.id)")! }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -236,11 +207,9 @@ struct ItemInfoBar: View {
 
                 Menu {
                     Button("Link kopieren", systemImage: "link") {
-                        #if canImport(UIKit)
-                        UIPasteboard.general.url = link
-                        #endif
+                        UIPasteboard.general.url = item.webURL
                     }
-                    Button("Im Browser öffnen", systemImage: "safari") { openURL(link) }
+                    Button("Im Browser öffnen", systemImage: "safari") { openURL(item.webURL) }
                     #if os(visionOS)
                     Button("In eigenem Fenster öffnen", systemImage: "macwindow.badge.plus") {
                         openWindow(id: MediaWindow.id, value: item)
@@ -260,7 +229,7 @@ struct ItemInfoBar: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     VoteCapsule(item: item)
-                    ShareLink(item: link) {
+                    ShareLink(item: item.webURL) {
                         ActionPillLabel(title: "Teilen", symbol: "square.and.arrow.up")
                     }
                     .buttonStyle(.plain)
@@ -273,35 +242,24 @@ struct ItemInfoBar: View {
     }
 }
 
-/// Label of a pill-shaped action button in the post's action row.
-struct ActionPillLabel: View {
-    let title: String
-    let symbol: String
-    var tint: Color = .pr0Text
+struct ItemScore: View {
+    @Environment(Session.self) private var session
+    let item: FeedItem
 
     var body: some View {
-        Label(title, systemImage: symbol)
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(tint)
-            .padding(.horizontal, 14)
-            .frame(height: 38)
-            .background(Color.pr0Pill, in: .capsule)
-            .contentShape(.capsule)
+        ScoreView(score: session.score(of: item), created: item.createdAt)
     }
 }
 
-/// ⊕ score ⊖ in one capsule.
 struct VoteCapsule: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     let item: FeedItem
-    @State private var failed = false
-
     var body: some View {
         let vote = session.vote(for: .item, id: item.id)
         HStack(spacing: 0) {
             button(value: 1, current: vote, symbol: "plus", label: "Plus")
-            ScoreView(score: item.score + vote, created: item.createdAt)
+            ItemScore(item: item)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(vote == 0 ? Color.pr0Text : Color.pr0Orange)
                 .frame(minWidth: 36)
@@ -310,16 +268,12 @@ struct VoteCapsule: View {
         .frame(height: 38)
         .background(Color.pr0Pill, in: .capsule)
         .animation(.snappy, value: vote)
-        .alert("Abstimmen fehlgeschlagen", isPresented: $failed) {}
     }
 
     private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
         let active = current == value
         return Button {
-            guard session.isLoggedIn else { return app.showsLogin = true }
-            Task {
-                do { try await session.vote(.item, id: item.id, value: active ? 0 : value) } catch { failed = true }
-            }
+            Task { await app.toggleVote(.item, id: item.id, value) }
         } label: {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .bold))

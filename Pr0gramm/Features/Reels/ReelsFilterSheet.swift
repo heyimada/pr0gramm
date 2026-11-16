@@ -1,0 +1,99 @@
+import SwiftUI
+
+struct ReelsFilterSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ReelsFilterStore.self) private var store
+    @State private var newIncluded = ""
+    @State private var newExcluded = ""
+
+    var body: some View {
+        @Bindable var store = store
+        NavigationStack {
+            Form {
+                Section {
+                    Toggle("Nur Videos", isOn: $store.filter.onlyVideos)
+                }
+
+                Section {
+                    tagList($store.filter.includedTags, tint: .upvoteGreen)
+                    addField("Tag hinzufügen, z. B. kadse", text: $newIncluded) { store.filter.include($0) }
+                } header: {
+                    Text("Nur mit diesen Tags")
+                } footer: {
+                    Text("Posts müssen alle Tags haben.")
+                }
+
+                Section("Ausblenden") {
+                    tagList($store.filter.excludedTags, tint: .pr0Orange)
+                    addField("Tag ausschließen, z. B. süßvieh", text: $newExcluded) { store.filter.exclude($0) }
+                }
+
+                if store.filter.hasTagFilter {
+                    Section {
+                        Button("Tag-Filter zurücksetzen", role: .destructive) {
+                            store.filter.clearTags()
+                        }
+                    }
+                }
+            }
+            .pr0FormBackground()
+            .inlineNavigationTitle("Reels-Filter")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig", role: .confirm) {
+                        store.filter.include(newIncluded)
+                        store.filter.exclude(newExcluded)
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    @ViewBuilder
+    private func tagList(_ tags: Binding<[String]>, tint: Color) -> some View {
+        if !tags.wrappedValue.isEmpty {
+            FlowLayout(spacing: 8) {
+                ForEach(tags.wrappedValue, id: \.self) { tag in
+                    Button {
+                        withAnimation { tags.wrappedValue.removeAll { $0 == tag } }
+                    } label: {
+                        TagCapsule(tint: tint) {
+                            HStack(spacing: 6) {
+                                Text(tag)
+                                Image(systemName: "xmark").font(.caption2.weight(.bold))
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(tag) entfernen")
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func addField(_ prompt: String, text: Binding<String>, add: @escaping (String) -> Void) -> some View {
+        HStack {
+            TextField(prompt, text: text)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .submitLabel(.done)
+                .onSubmit {
+                    withAnimation { add(text.wrappedValue) }
+                    text.wrappedValue = ""
+                }
+            if !text.wrappedValue.isEmpty {
+                Button {
+                    withAnimation { add(text.wrappedValue) }
+                    text.wrappedValue = ""
+                } label: {
+                    Image(systemName: "plus.circle.fill").foregroundStyle(Color.upvoteGreen)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Hinzufügen")
+            }
+        }
+    }
+}

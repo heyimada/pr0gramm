@@ -9,20 +9,10 @@ struct ContentFlags: OptionSet, Hashable, Codable, Sendable {
     static let nsfl = ContentFlags(rawValue: 4)
     static let nsfp = ContentFlags(rawValue: 8)
     static let pol = ContentFlags(rawValue: 16)
-
-    /// Label of the most severe rating contained in the set, as shown on items.
-    var badge: String? {
-        if contains(.nsfl) { return "NSFL" }
-        if contains(.nsfw) { return "NSFW" }
-        if contains(.pol) { return "POL" }
-        if contains(.nsfp) { return "NSFP" }
-        return nil
-    }
 }
 
 struct FeedResponse: Decodable {
     let atEnd: Bool
-    let atStart: Bool
     let error: String?
     let items: [FeedItem]
 }
@@ -69,7 +59,11 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
         return MediaHost.image.url(image)
     }
 
+    var webURL: URL { Site.post(id) }
+
     var fullsizeURL: URL? { fullsize.isEmpty ? nil : MediaHost.full.url(fullsize) }
+
+    var bestURL: URL { fullsizeURL ?? mediaURL }
 
     var sourceURL: URL? {
         guard let source,
@@ -90,8 +84,17 @@ struct MediaVariant: Codable, Hashable, Sendable {
 }
 
 struct ItemInfo: Decodable {
+    /// Highest confidence first.
     let tags: [Tag]
-    let comments: [Comment]
+    var comments: [Comment]
+
+    private enum CodingKeys: String, CodingKey { case tags, comments }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        tags = try container.decode([Tag].self, forKey: .tags).sorted { $0.confidence > $1.confidence }
+        comments = try container.decode([Comment].self, forKey: .comments)
+    }
 }
 
 struct Tag: Decodable, Identifiable, Hashable {
@@ -117,8 +120,6 @@ struct Comment: Decodable, Identifiable, Hashable {
 
 struct Profile: Decodable {
     struct User: Decodable {
-        let id: Int
-        let name: String
         let registered: Int
         let score: Int
         let mark: Int
@@ -130,7 +131,7 @@ struct Profile: Decodable {
     struct Badge: Decodable, Hashable {
         let image: String
         let description: String?
-        var imageURL: URL { URL(string: "https://pr0gramm.com/media/badges/")!.appending(path: image) }
+        var imageURL: URL { Site.badge(image) }
     }
 
     let user: User
@@ -162,7 +163,6 @@ struct SyncResponse: Decodable {
 }
 
 struct PostCommentResponse: Decodable {
-    let commentId: Int?
     let comments: [Comment]?
 }
 
@@ -175,51 +175,32 @@ enum MediaHost: String {
     case full = "full"
 
     func url(_ path: String) -> URL {
-        URL(string: "https://\(rawValue).pr0gramm.com/")!.appending(path: path)
+        URL(string: "https://\(rawValue).\(Site.host)/")!.appending(path: path)
     }
 }
 
 /// Official user ranks (`mark` field): colors and names.
 enum UserMark {
-    static func name(_ mark: Int) -> String {
-        switch mark {
-        case 1: "Neuschwuchtel"
-        case 2: "Altschwuchtel"
-        case 3: "Admin"
-        case 4: "Gesperrt"
-        case 5: "Moderator"
-        case 6: "Fliesentischbesitzer"
-        case 7: "Lebende Legende"
-        case 8: "Wichtler"
-        case 9: "Edler Spender"
-        case 10: "Mittelaltschwuchtel"
-        case 11: "Alt-Moderator"
-        case 12: "Communityhelfer"
-        case 13: "Nutzer-Bot"
-        case 14: "System-Bot"
-        case 15: "Alt-Helfer"
-        default: "Schwuchtel"
-        }
-    }
+    private static let ranks: [Int: (name: String, color: UInt32)] = [
+        1: ("Neuschwuchtel", 0xE108E9),
+        2: ("Altschwuchtel", 0x5BB91C),
+        3: ("Admin", 0xFF9900),
+        4: ("Gesperrt", 0x444444),
+        5: ("Moderator", 0x008FFF),
+        6: ("Fliesentischbesitzer", 0x6C432B),
+        7: ("Lebende Legende", 0x1CB992),
+        8: ("Wichtler", 0xD23C22),
+        9: ("Edler Spender", 0x1CB992),
+        10: ("Mittelaltschwuchtel", 0xADDC8D),
+        11: ("Alt-Moderator", 0x7FC7FF),
+        12: ("Communityhelfer", 0xC52B2F),
+        13: ("Nutzer-Bot", 0x10366F),
+        14: ("System-Bot", 0xFFC166),
+        15: ("Alt-Helfer", 0xEA9FA1),
+    ]
+    private static let fallback: (name: String, color: UInt32) = ("Schwuchtel", 0xFFFFFF)
 
-    static func hex(_ mark: Int) -> UInt32 {
-        switch mark {
-        case 1: 0xE108E9 // Neuschwuchtel
-        case 2: 0x5BB91C // Altschwuchtel
-        case 3: 0xFF9900 // Admin
-        case 4: 0x444444 // Gesperrt
-        case 5: 0x008FFF // Moderator
-        case 6: 0x6C432B // Fliesentischbesitzer
-        case 7: 0x1CB992 // Lebende Legende
-        case 8: 0xD23C22 // Wichtler
-        case 9: 0x1CB992 // Edler Spender
-        case 10: 0xADDC8D // Mittelaltschwuchtel
-        case 11: 0x7FC7FF // Alt-Moderator
-        case 12: 0xC52B2F // Communityhelfer
-        case 13: 0x10366F // Nutzer-Bot
-        case 14: 0xFFC166 // System-Bot
-        case 15: 0xEA9FA1 // Alt-Helfer
-        default: 0xFFFFFF // Schwuchtel
-        }
-    }
+    static func name(_ mark: Int) -> String { (ranks[mark] ?? fallback).name }
+
+    static func hex(_ mark: Int) -> UInt32 { (ranks[mark] ?? fallback).color }
 }

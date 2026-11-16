@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Profil tab: your own profile, or a prompt to log in.
 struct AccountScreen: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app

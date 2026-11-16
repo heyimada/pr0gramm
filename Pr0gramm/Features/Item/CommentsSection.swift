@@ -1,14 +1,12 @@
 import SwiftUI
 
-/// A comment positioned in the flattened thread.
 struct CommentNode: Identifiable {
     let comment: Comment
     let depth: Int
     let replyCount: Int
     var id: Int { comment.id }
 
-    /// Depth-first flattening; siblings are ordered by confidence like on the website.
-    /// Descendants of `collapsed` comments are skipped.
+    /// Siblings are ordered by confidence like on the website.
     static func flatten(_ comments: [Comment], collapsed: Set<Int>) -> [CommentNode] {
         let children = Dictionary(grouping: comments, by: \.parent)
             .mapValues { $0.sorted { $0.confidence > $1.confidence } }
@@ -36,11 +34,11 @@ struct CommentNode: Identifiable {
 struct CommentsSection: View {
     @Environment(Session.self) private var session
     let item: FeedItem
-    let comments: [Comment]
-    let onComment: () -> Void
-    let onReply: (Comment) -> Void
+    let details: ItemDetails
 
     @State private var collapsed: Set<Int> = []
+
+    private var comments: [Comment] { details.info?.comments ?? [] }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -49,7 +47,9 @@ struct CommentsSection: View {
                     .font(.title3.weight(.semibold))
                 Spacer()
                 if session.isLoggedIn {
-                    Button("Kommentieren", systemImage: "square.and.pencil", action: onComment)
+                    Button("Kommentieren", systemImage: "square.and.pencil") {
+                        details.replyTarget = ReplyTarget(parentId: 0, name: nil)
+                    }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                 }
@@ -62,7 +62,7 @@ struct CommentsSection: View {
                         isOP: node.comment.name == item.user,
                         isCollapsed: collapsed.contains(node.id),
                         onToggle: { toggle(node.id) },
-                        onReply: { onReply(node.comment) }
+                        onReply: { details.replyTarget = ReplyTarget(parentId: node.comment.id, name: node.comment.name) }
                     )
                 }
             }
@@ -76,6 +76,26 @@ struct CommentsSection: View {
     }
 }
 
+struct ReplyTarget: Identifiable {
+    let parentId: Int
+    let name: String?
+    var id: Int { parentId }
+}
+
+extension View {
+    /// Presents the comment composer for `details.replyTarget`. Attach it to a view that keeps its
+    /// identity while the post's layout changes, so a rotation doesn't throw away a draft.
+    func commentComposer(item: FeedItem, details: ItemDetails) -> some View {
+        @Bindable var details = details
+        return sheet(item: $details.replyTarget) { target in
+            CommentComposer(itemId: item.id, parentId: target.parentId,
+                            replyingTo: target.name) { comments in
+                Task { await details.apply(postedComments: comments) }
+            }
+        }
+    }
+}
+
 private struct CommentRow: View {
     @Environment(Session.self) private var session
     let node: CommentNode
@@ -84,7 +104,6 @@ private struct CommentRow: View {
     let onToggle: () -> Void
     let onReply: () -> Void
 
-    /// Past this depth, threads stop indenting so text stays readable on phones.
     private static let maxIndent = 6
 
     var body: some View {
@@ -166,9 +185,7 @@ private struct CommentRow: View {
 
             Menu {
                 Button("Text kopieren", systemImage: "doc.on.doc") {
-                    #if canImport(UIKit)
                     UIPasteboard.general.string = node.comment.content
-                    #endif
                 }
                 if node.replyCount > 0 {
                     Button(isCollapsed ? "Antworten aufklappen" : "Antworten einklappen",
@@ -187,7 +204,40 @@ private struct CommentRow: View {
     }
 }
 
-/// Turns plain comment text into an `AttributedString` with tappable URLs and @mentions.
+struct VoteButtons: View {
+    @Environment(Session.self) private var session
+    @Environment(AppState.self) private var app
+    let target: VoteTarget
+    let id: Int
+    var size: CGFloat = 20
+
+    var body: some View {
+        let vote = session.vote(for: target, id: id)
+        VStack(spacing: size * 0.3) {
+            button(value: 1, current: vote, symbol: "plus.circle", label: "Plus")
+            button(value: -1, current: vote, symbol: "minus.circle", label: "Minus")
+        }
+    }
+
+    private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
+        let active = current == value
+        return Button {
+            Task { await app.toggleVote(target, id: id, value) }
+        } label: {
+            Image(systemName: active ? "\(symbol).fill" : symbol)
+                .resizable()
+                .fontWeight(.light)
+                .frame(width: size, height: size)
+                .foregroundStyle(active ? Color.pr0Orange : Color.pr0Secondary)
+                .contentShape(.rect.inset(by: -6))
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: active)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(active ? .isSelected : [])
+    }
+}
+
 enum CommentText {
     private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
     private static let mention = /@([A-Za-z0-9_-]{2,32})/
@@ -202,9 +252,8 @@ enum CommentText {
             result[attributedRange].link = url
         }
         for match in text.matches(of: mention) {
-            guard let attributedRange = Range(match.range, in: result),
-                  let url = URL(string: "https://pr0gramm.com/user/\(match.output.1)") else { continue }
-            result[attributedRange].link = url
+            guard let attributedRange = Range(match.range, in: result) else { continue }
+            result[attributedRange].link = Site.user(String(match.output.1))
         }
         return result
     }

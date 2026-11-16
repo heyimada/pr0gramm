@@ -30,9 +30,7 @@ struct SearchOptions {
 
     var query: FeedQuery? {
         let words = { (text: String) in text.split(whereSeparator: \.isWhitespace).map(String.init) }
-        var raw = text.trimmingCharacters(in: .whitespaces)
-        let wasExtended = raw.hasPrefix("!")
-        if wasExtended { raw.removeFirst() }
+        let text = TagQuery(self.text)
 
         var advanced: [String] = []
         if requiresMinimumScore, minimumScore > 0 { advanced.append("s:\(minimumScore)") }
@@ -43,9 +41,9 @@ struct SearchOptions {
         }
         advanced += words(excludedTags).map { $0.hasPrefix("-") ? $0 : "-\($0)" }
 
-        let terms = words(raw) + advanced
+        let terms = text.words + advanced
         guard !terms.isEmpty else { return nil }
-        let tags = (wasExtended || !advanced.isEmpty ? "! " : "") + terms.joined(separator: " ")
+        let tags = (text.isExtended || !advanced.isEmpty || TagQuery.needsExtended(text.words) ? "! " : "") + terms.joined(separator: " ")
         return FeedQuery(stream: stream, tags: tags)
     }
 }

@@ -2,11 +2,9 @@ import AVKit
 import SwiftUI
 
 #if os(visionOS)
-/// Stand-alone window showing just an item's media, which the user can resize and place freely.
 struct MediaWindow: View {
     static let id = "media"
 
-    @Environment(Session.self) private var session
     let item: FeedItem
     @State private var looping: LoopingPlayer?
 
@@ -19,7 +17,7 @@ struct MediaWindow: View {
                     ProgressView()
                 }
             } else {
-                RemoteImage(url: item.fullsizeURL ?? item.mediaURL)
+                RemoteImage(url: item.bestURL)
             }
         }
         .aspectRatio(item.aspectRatio, contentMode: .fit)
@@ -32,7 +30,6 @@ struct MediaWindow: View {
         .onDisappear { looping?.player.pause() }
     }
 
-    /// Fits the media into roughly 1000pt on its longer side.
     private var idealSize: CGSize {
         let longSide: CGFloat = 1000
         return item.aspectRatio >= 1

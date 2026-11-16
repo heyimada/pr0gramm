@@ -1,16 +1,9 @@
 import AVKit
 import SwiftUI
 
-/// Downloads tab: grid of offline posts.
 struct DownloadsScreen: View {
     @Environment(DownloadStore.self) private var store
     @Environment(\.horizontalSizeClass) private var sizeClass
-
-    private var columns: [GridItem] {
-        sizeClass == .compact
-            ? Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
-            : [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 2)]
-    }
 
     var body: some View {
         ScrollView {
@@ -19,7 +12,7 @@ struct DownloadsScreen: View {
                                        description: Text("Tippe bei einem Post auf ↓, um ihn offline zu speichern."))
                     .padding(.top, 120)
             } else {
-                LazyVGrid(columns: columns, spacing: 2) {
+                LazyVGrid(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact), spacing: ThumbnailView.spacing) {
                     ForEach(store.downloads) { download in
                         NavigationLink(value: Route.download(download.id)) {
                             ThumbnailView(item: download.item)
@@ -43,7 +36,6 @@ struct DownloadsScreen: View {
     }
 }
 
-/// Share, save to Photos and delete, used in context menus and the viewer's toolbar.
 struct DownloadActions: View {
     @Environment(DownloadStore.self) private var store
     let download: Download
@@ -54,7 +46,7 @@ struct DownloadActions: View {
             Label("Teilen", systemImage: "square.and.arrow.up")
         }
         Button("In Fotos sichern", systemImage: "photo.badge.arrow.down") {
-            Task { try? await store.saveToPhotos(download) }
+            Task { await store.saveToPhotos(download) }
         }
         Button("Löschen", systemImage: "trash", role: .destructive) {
             store.delete(download)
@@ -63,7 +55,6 @@ struct DownloadActions: View {
     }
 }
 
-/// Plays or shows a downloaded file from disk.
 struct DownloadViewer: View {
     @Environment(DownloadStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -108,19 +99,16 @@ struct DownloadViewer: View {
     }
 }
 
-/// "Laden" pill: downloads the post, shows progress, then "Gespeichert".
 struct DownloadButton: View {
     @Environment(DownloadStore.self) private var store
     let item: FeedItem
-    @State private var failed = false
 
     var body: some View {
-        let isSaved = store.download(for: item.id) != nil
-        let isLoading = store.inProgress.contains(item.id)
+        let state = store.state(for: item.id)
+        let isSaved = state == .saved
+        let isLoading = state == .loading
         Button {
-            Task {
-                do { try await store.save(item) } catch { failed = true }
-            }
+            Task { await store.save(item) }
         } label: {
             if isLoading {
                 ProgressView()
@@ -135,6 +123,5 @@ struct DownloadButton: View {
         }
         .buttonStyle(.plain)
         .disabled(isSaved || isLoading)
-        .alert("Download fehlgeschlagen", isPresented: $failed) {}
     }
 }
