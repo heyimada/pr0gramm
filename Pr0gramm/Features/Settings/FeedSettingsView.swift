@@ -100,9 +100,7 @@ struct CustomFeedEditor: View {
     }
 
     private var tagsAreEmpty: Bool {
-        var tags = feed.tags.trimmingCharacters(in: .whitespaces)
-        if tags.hasPrefix("!") { tags.removeFirst() }
-        return tags.trimmingCharacters(in: .whitespaces).isEmpty
+        TagQuery(feed.tags).body.isEmpty
     }
 
     var body: some View {

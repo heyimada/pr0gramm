@@ -14,10 +14,8 @@ struct ReelsFilter: Codable, Equatable {
             tag.contains(where: \.isWhitespace) ? "\"\(tag)\"" : tag
         }
         var terms = onlyVideos ? ["video"] : []
-        if var tags = feed.tags?.trimmingCharacters(in: .whitespaces), !tags.isEmpty {
-            if tags.hasPrefix("!") { tags.removeFirst() }
-            terms.append(tags.trimmingCharacters(in: .whitespaces))
-        }
+        let body = TagQuery(feed.tags ?? "").body
+        if !body.isEmpty { terms.append(body) }
         terms += includedTags.map(quoted)
         terms += excludedTags.map { "-\"\($0)\"" }
         return FeedQuery(stream: feed.stream, tags: terms.isEmpty ? nil : "! " + terms.joined(separator: " "))

@@ -21,16 +21,15 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     var query: FeedQuery {
         let tags = tags.trimmingCharacters(in: .whitespaces)
         // Excluding tags only works in the extended syntax, which starts with "!".
-        let needsExtended = !tags.hasPrefix("!") && tags.split(whereSeparator: \.isWhitespace).contains { $0.hasPrefix("-") }
+        let parsed = TagQuery(tags)
+        let needsExtended = !parsed.isExtended && parsed.words.contains { $0.hasPrefix("-") }
         return FeedQuery(stream: stream, tags: needsExtended ? "! " + tags : tags)
     }
 
     /// A feed prefilled from a tag search, named after its tags.
     init(query: FeedQuery) {
         let tags = query.tags ?? ""
-        var name = tags
-        if name.hasPrefix("!") { name.removeFirst() }
-        self.name = name.trimmingCharacters(in: .whitespaces)
+        self.name = TagQuery(tags).body
         self.tags = tags
         stream = query.stream
     }
