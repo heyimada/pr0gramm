@@ -60,6 +60,7 @@ struct ItemDetailView: View {
         .scrollIndicators(.hidden)
         .onDisappear { playback.stop() }
         .task { await details.load() }
+        .commentComposer(item: item, details: details)
     }
 
     private func media(maxHeight: CGFloat, insets: EdgeInsets = EdgeInsets()) -> some View {
@@ -240,14 +241,9 @@ struct ItemInfoBar: View {
 struct ItemScore: View {
     @Environment(Session.self) private var session
     let item: FeedItem
-    @State private var baseline: Int?
 
     var body: some View {
-        let vote = session.vote(for: .item, id: item.id)
-        ScoreView(score: item.score + vote - (baseline ?? vote), created: item.createdAt)
-            .onChange(of: [item.up, item.down], initial: true) {
-                baseline = session.vote(for: .item, id: item.id)
-            }
+        ScoreView(score: session.score(of: item), created: item.createdAt)
     }
 }
 

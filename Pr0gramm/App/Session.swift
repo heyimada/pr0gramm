@@ -19,6 +19,7 @@ final class Session {
     }
 
     private(set) var votes: [VoteTarget: [Int: Int]] = [:]
+    @ObservationIgnored private var votesWhenFirstShown: [Int: Int] = [:]
 
     private let defaults: UserDefaults
     private var syncOffset: Int
@@ -91,6 +92,7 @@ final class Session {
         userName = nil
         userScore = nil
         votes = [:]
+        votesWhenFirstShown = [:]
         syncOffset = 0
         saveVotes()
     }
@@ -99,6 +101,16 @@ final class Session {
 
     func vote(for target: VoteTarget, id: Int) -> Int {
         votes[target]?[id] ?? 0
+    }
+
+    /// The server's up and down counts already include the vote it had when the post was loaded,
+    /// so only changes made since then are added. That vote is taken as the one this app run
+    /// first showed the post with.
+    func score(of item: FeedItem) -> Int {
+        let vote = vote(for: .item, id: item.id)
+        let known = votesWhenFirstShown[item.id] ?? vote
+        votesWhenFirstShown[item.id] = known
+        return item.score + vote - known
     }
 
     func toggleVote(_ target: VoteTarget, id: Int, _ value: Int) async throws {

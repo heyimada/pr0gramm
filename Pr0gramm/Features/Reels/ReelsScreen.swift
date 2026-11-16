@@ -38,8 +38,8 @@ struct ReelsScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         #endif
         .onGeometryChange(for: EdgeInsets.self, of: \.safeAreaInsets) { insets = $0 }
-        .environment(store)
         .sheet(isPresented: $showsFilter) { ReelsFilterSheet() }
+        .environment(store)
         .onAppear {
             if !appliedStartMuted {
                 appliedStartMuted = true
@@ -403,6 +403,8 @@ private struct ReelCommentsSheet: View {
                 }
             }
             .task { await details.loadIfNeeded() }
+            .commentComposer(item: item, details: details)
+            .appAlerts()
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(Color.pr0Background)

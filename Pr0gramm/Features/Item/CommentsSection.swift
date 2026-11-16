@@ -37,7 +37,6 @@ struct CommentsSection: View {
     let details: ItemDetails
 
     @State private var collapsed: Set<Int> = []
-    @State private var replyTarget: ReplyTarget?
 
     private var comments: [Comment] { details.info?.comments ?? [] }
 
@@ -49,7 +48,7 @@ struct CommentsSection: View {
                 Spacer()
                 if session.isLoggedIn {
                     Button("Kommentieren", systemImage: "square.and.pencil") {
-                        replyTarget = ReplyTarget(parentId: 0, name: item.user)
+                        details.replyTarget = ReplyTarget(parentId: 0, name: item.user)
                     }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -63,15 +62,9 @@ struct CommentsSection: View {
                         isOP: node.comment.name == item.user,
                         isCollapsed: collapsed.contains(node.id),
                         onToggle: { toggle(node.id) },
-                        onReply: { replyTarget = ReplyTarget(parentId: node.comment.id, name: node.comment.name) }
+                        onReply: { details.replyTarget = ReplyTarget(parentId: node.comment.id, name: node.comment.name) }
                     )
                 }
-            }
-        }
-        .sheet(item: $replyTarget) { target in
-            CommentComposer(itemId: item.id, parentId: target.parentId,
-                            replyingTo: target.parentId == 0 ? nil : target.name) { comments in
-                Task { await details.apply(postedComments: comments) }
             }
         }
     }
@@ -83,10 +76,24 @@ struct CommentsSection: View {
     }
 }
 
-private struct ReplyTarget: Identifiable {
+struct ReplyTarget: Identifiable {
     let parentId: Int
     let name: String
     var id: Int { parentId }
+}
+
+extension View {
+    /// Presents the comment composer for `details.replyTarget`. Attach it to a view that keeps its
+    /// identity while the post's layout changes, so a rotation doesn't throw away a draft.
+    func commentComposer(item: FeedItem, details: ItemDetails) -> some View {
+        @Bindable var details = details
+        return sheet(item: $details.replyTarget) { target in
+            CommentComposer(itemId: item.id, parentId: target.parentId,
+                            replyingTo: target.parentId == 0 ? nil : target.name) { comments in
+                Task { await details.apply(postedComments: comments) }
+            }
+        }
+    }
 }
 
 private struct CommentRow: View {

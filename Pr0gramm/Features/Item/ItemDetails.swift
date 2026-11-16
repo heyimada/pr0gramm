@@ -5,6 +5,7 @@ final class ItemDetails {
     let itemID: Int
     private(set) var info: ItemInfo?
     private(set) var error: Error?
+    var replyTarget: ReplyTarget?
 
     init(itemID: Int) {
         self.itemID = itemID
