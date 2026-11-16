@@ -115,8 +115,9 @@ struct DownloadButton: View {
     @State private var failed = false
 
     var body: some View {
-        let isSaved = store.download(for: item.id) != nil
-        let isLoading = store.inProgress.contains(item.id)
+        let state = store.state(for: item.id)
+        let isSaved = state == .saved
+        let isLoading = state == .loading
         Button {
             Task {
                 do { try await store.save(item) } catch { failed = true }

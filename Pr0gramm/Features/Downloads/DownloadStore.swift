@@ -9,11 +9,13 @@ struct Download: Codable, Identifiable {
     var id: Int { item.id }
 }
 
+enum DownloadState { case notSaved, loading, saved }
+
 /// Posts saved for offline viewing in `Documents/Downloads`, with a JSON index next to them.
 @Observable
 final class DownloadStore {
     private(set) var downloads: [Download] = []
-    private(set) var inProgress: Set<Int> = []
+    private var inProgress: Set<Int> = []
 
     private let directory: URL
     private var indexURL: URL { directory.appending(path: "index.json") }
@@ -29,6 +31,10 @@ final class DownloadStore {
 
     func download(for id: Int) -> Download? {
         downloads.first { $0.id == id }
+    }
+
+    func state(for id: Int) -> DownloadState {
+        if inProgress.contains(id) { .loading } else if download(for: id) != nil { .saved } else { .notSaved }
     }
 
     func fileURL(for download: Download) -> URL {

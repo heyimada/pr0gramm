@@ -456,8 +456,9 @@ private struct ReelDownloadAction: View {
     let item: FeedItem
 
     var body: some View {
-        let isSaved = store.download(for: item.id) != nil
-        let isLoading = store.inProgress.contains(item.id)
+        let state = store.state(for: item.id)
+        let isSaved = state == .saved
+        let isLoading = state == .loading
         Button {
             Task { try? await store.save(item) }
         } label: {
