@@ -28,12 +28,8 @@ struct CommentComposer: View {
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.pr0Background)
-            .navigationTitle(replyingTo.map { "Antwort an \($0)" } ?? "Kommentar")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .pr0FormBackground()
+            .inlineNavigationTitle(replyingTo.map { "Antwort an \($0)" } ?? "Kommentar")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen", role: .cancel) { dismiss() }

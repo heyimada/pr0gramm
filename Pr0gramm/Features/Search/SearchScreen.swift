@@ -77,8 +77,7 @@ struct SearchScreen: View {
                 }
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.pr0Background)
+        .pr0FormBackground()
     }
 
     private func submit() {

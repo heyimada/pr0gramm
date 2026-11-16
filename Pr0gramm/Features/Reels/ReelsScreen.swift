@@ -426,10 +426,7 @@ private struct ReelCommentsSheet: View {
                 .padding(16)
             }
             .background(Color.pr0Background)
-            .navigationTitle("Kommentare")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .inlineNavigationTitle("Kommentare")
             .navigationDestination(for: Route.self) { RouteDestination(route: $0) }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

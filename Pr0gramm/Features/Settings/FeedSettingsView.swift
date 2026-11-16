@@ -70,12 +70,8 @@ struct FeedSettingsView: View {
                 Text("Eigene Feeds erscheinen im Feed-Tab und in Reels neben beliebt, neu und müll, auf Wunsch nur bei bestimmten Filtern. Du kannst auch eine Suche mit dem Lesezeichen speichern.")
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.pr0Background)
-        .navigationTitle("Feeds")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .pr0FormBackground()
+        .inlineNavigationTitle("Feeds")
         .toolbar {
             if !app.accessibleCustomFeeds.isEmpty {
                 EditButton()
@@ -159,12 +155,8 @@ struct CustomFeedEditor: View {
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.pr0Background)
-            .navigationTitle(isNew ? "Neuer Feed" : "Feed bearbeiten")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .pr0FormBackground()
+            .inlineNavigationTitle(isNew ? "Neuer Feed" : "Feed bearbeiten")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen", role: .cancel) { dismiss() }

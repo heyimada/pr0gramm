@@ -59,12 +59,8 @@ struct NavigationSettingsView: View {
             }
         }
         .environment(\.editMode, .constant(.active))
-        .scrollContentBackground(.hidden)
-        .background(Color.pr0Background)
-        .navigationTitle("Navigation")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .pr0FormBackground()
+        .inlineNavigationTitle("Navigation")
     }
 
     private func row(_ tab: AppTab) -> some View {

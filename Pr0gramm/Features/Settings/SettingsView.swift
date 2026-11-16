@@ -65,12 +65,8 @@ struct SettingsView: View {
                     Text("Inoffizieller Client. Nicht mit pr0gramm.com verbunden.")
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.pr0Background)
-            .navigationTitle("Einstellungen")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .pr0FormBackground()
+            .inlineNavigationTitle("Einstellungen")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig", role: .confirm) { dismiss() }

@@ -322,3 +322,17 @@ extension View {
         #endif
     }
 }
+
+extension View {
+    func inlineNavigationTitle(_ title: String) -> some View {
+        #if os(iOS)
+        navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+        #else
+        navigationTitle(title)
+        #endif
+    }
+
+    func pr0FormBackground() -> some View {
+        scrollContentBackground(.hidden).background(Color.pr0Background)
+    }
+}

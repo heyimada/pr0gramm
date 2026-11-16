@@ -37,12 +37,8 @@ struct ReelsFilterSheet: View {
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.pr0Background)
-            .navigationTitle("Reels-Filter")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .pr0FormBackground()
+            .inlineNavigationTitle("Reels-Filter")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig", role: .confirm) {
