@@ -28,7 +28,9 @@ struct ItemDetailView: View {
     }
 
     var body: some View {
-        Group {
+        // One container rather than a Group, so the modifiers below, the comment composer
+        // among them, belong to the page and survive switching between the two layouts.
+        ZStack {
             if isSideBySide {
                 HStack(spacing: 0) {
                     GeometryReader { proxy in

@@ -40,11 +40,8 @@ struct FeedGrid<Header: View>: View {
 
             if model.isLoading {
                 ProgressView().padding()
-            } else if model.pagingFailed && !model.items.isEmpty {
-                Button("Erneut versuchen") { Task { await model.retryPaging(flags: session.flags) } }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .padding()
+            } else {
+                PagingRetry(model: model).padding()
             }
 
             // Inline rather than an overlay so a header (e.g. on profiles) stays visible.
@@ -84,5 +81,19 @@ struct FeedStatus: View {
 extension FeedGrid where Header == EmptyView {
     init(model: FeedModel, onScroll: ((CGFloat) -> Void)? = nil) {
         self.init(model: model, onScroll: onScroll) { EmptyView() }
+    }
+}
+
+/// Offered after loading the next page failed, since nothing else asks for it again.
+struct PagingRetry: View {
+    @Environment(Session.self) private var session
+    let model: FeedModel
+
+    var body: some View {
+        if model.pagingFailed && !model.items.isEmpty {
+            Button("Erneut versuchen") { Task { await model.retryPaging(flags: session.flags) } }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
     }
 }

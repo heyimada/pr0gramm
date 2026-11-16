@@ -177,6 +177,7 @@ private struct ReelsFeed: View {
         }
         .ignoresSafeArea()
         .overlay { FeedStatus(model: model, emptySymbol: "play.slash") }
+        .overlay(alignment: .bottom) { PagingRetry(model: model).padding(.bottom, insets.bottom + 72) }
         .task(id: session.flags) {
             await model.loadIfNeeded(flags: session.flags)
             if currentID == nil || !model.items.contains(where: { $0.id == currentID }) {

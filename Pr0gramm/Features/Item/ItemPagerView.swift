@@ -34,6 +34,7 @@ struct ItemPagerView: View {
             .onGeometryChange(for: CGSize.self, of: \.size) { pageSize = $0 }
             .ignoresSafeArea(edges: .horizontal)
         }
+        .overlay(alignment: .bottom) { PagingRetry(model: model).padding(.bottom, 24) }
         .background(Color.pr0Background)
         .navigationTitle(model.items.first { $0.id == currentID }?.user ?? "")
         #if os(iOS)
