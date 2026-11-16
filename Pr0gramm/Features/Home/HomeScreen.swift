@@ -100,6 +100,7 @@ private struct AmbientBackdrop: View {
 
 private struct HeroCard: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(PlaybackSettings.self) private var playback
     let item: FeedItem
     let route: Route
     @State private var details: ItemDetails
@@ -135,7 +136,7 @@ private struct HeroCard: View {
         .padding(.horizontal, 16)
         .task { await details.loadIfNeeded() }
         .onAppear {
-            guard item.isVideo, looping == nil else { return }
+            guard item.isVideo, playback.autoplayVideos, looping == nil else { return }
             looping = LoopingPlayer(url: item.mediaURL, muted: true)
             looping?.player.play()
         }

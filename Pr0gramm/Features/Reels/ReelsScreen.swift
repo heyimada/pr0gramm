@@ -2,11 +2,13 @@ import SwiftUI
 
 struct ReelsScreen: View {
     @Environment(FeedLibrary.self) private var library
+    @Environment(PlaybackSettings.self) private var playback
     @State private var store = ReelsFilterStore()
     @State private var selection: FeedSource?
     @State private var pool = ReelPlayerPool()
     @State private var insets = EdgeInsets()
     @State private var showsFilter = false
+    @State private var appliedStartMuted = false
 
     private var sources: [FeedSource] {
         library.sources(withSubscriptions: false)
@@ -38,7 +40,13 @@ struct ReelsScreen: View {
         .onGeometryChange(for: EdgeInsets.self, of: \.safeAreaInsets) { insets = $0 }
         .environment(store)
         .sheet(isPresented: $showsFilter) { ReelsFilterSheet() }
-        .onAppear { pool.resume() }
+        .onAppear {
+            if !appliedStartMuted {
+                appliedStartMuted = true
+                pool.isMuted = playback.startMuted
+            }
+            pool.resume()
+        }
         .onDisappear { pool.pauseAll() }
     }
 
