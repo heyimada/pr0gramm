@@ -14,10 +14,18 @@ struct ItemDetailView: View {
     /// Returns an action moving to the previous (-1) or next (+1) post, if there is one.
     var step: (Int) -> (() -> Void)? = { _ in nil }
 
-    @State private var info: ItemInfo?
-    @State private var infoError: Error?
-    @State private var replyTarget: ReplyTarget?
+    @State private var details: ItemDetails
     @State private var playback = VideoPlayback()
+
+    init(item: FeedItem, isActive: Bool, pageSize: CGSize, sideInsets: EdgeInsets = EdgeInsets(),
+         step: @escaping (Int) -> (() -> Void)? = { _ in nil }) {
+        self.item = item
+        self.isActive = isActive
+        self.pageSize = pageSize
+        self.sideInsets = sideInsets
+        self.step = step
+        _details = State(initialValue: ItemDetails(itemID: item.id))
+    }
 
     private var isSideBySide: Bool {
         sizeClass == .regular && pageSize.width > pageSize.height
@@ -40,7 +48,7 @@ struct ItemDetailView: View {
                     .background(Color.black)
 
                     ScrollView {
-                        details
+                        column
                             .padding(.top, 8)
                             .padding(.trailing, sideInsets.trailing)
                     }
@@ -50,20 +58,14 @@ struct ItemDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         media(maxHeight: max(pageSize.height * 0.75, 200), insets: sideInsets)
-                        details.padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
+                        column.padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
                     }
                 }
             }
         }
         .scrollIndicators(.hidden)
         .onDisappear { playback.stop() }
-        .task { await loadInfo() }
-        .sheet(item: $replyTarget) { target in
-            CommentComposer(itemId: item.id, parentId: target.parentId,
-                            replyingTo: target.parentId == 0 ? nil : target.name) { comments in
-                apply(comments)
-            }
-        }
+        .task { await details.load() }
     }
 
     /// Media and source link, kept clear of `insets` while their backgrounds fill them.
@@ -84,7 +86,7 @@ struct ItemDetailView: View {
         }
     }
 
-    private var details: some View {
+    private var column: some View {
         VStack(alignment: .leading, spacing: 0) {
             ItemInfoBar(item: item)
                 .padding(.horizontal, 16)
@@ -98,36 +100,17 @@ struct ItemDetailView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let info {
+        if let info = details.info {
             TagsSection(tags: info.tags)
-            CommentsSection(item: item, comments: info.comments,
-                            onComment: { replyTarget = ReplyTarget(parentId: 0, name: item.user) },
-                            onReply: { comment in replyTarget = ReplyTarget(parentId: comment.id, name: comment.name) })
+            CommentsSection(item: item, details: details)
                 .padding(.top, 28)
-        } else if let infoError {
-            ErrorView(error: infoError, retry: loadInfo)
+        } else if let error = details.error {
+            ErrorView(error: error, retry: details.load)
         } else {
             ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
         }
     }
 
-    private func apply(_ comments: [Comment]?) {
-        if let comments, let tags = info?.tags {
-            info = ItemInfo(tags: tags, comments: comments)
-        } else {
-            Task { await loadInfo() }
-        }
-    }
-
-    private func loadInfo() async {
-        do {
-            info = try await APIClient.shared.itemInfo(item.id)
-            infoError = nil
-        } catch is CancellationError {
-        } catch {
-            infoError = error
-        }
-    }
 }
 
 private struct SourceBar: View {
@@ -165,12 +148,6 @@ private struct SourceBar: View {
         .accessibilityLabel("Soße: \(domain)")
         .accessibilityHint("Öffnet die Quelle im Browser")
     }
-}
-
-private struct ReplyTarget: Identifiable {
-    let parentId: Int
-    let name: String
-    var id: Int { parentId }
 }
 
 /// Faint ‹ › buttons on the media's edges for stepping through the feed.

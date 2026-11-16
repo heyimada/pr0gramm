@@ -52,6 +52,7 @@ struct HomeScreen: View {
                     .padding(.horizontal, 16)
                 if let hero = top.first {
                     HeroCard(item: hero, route: .pager(PagerRoute(model: topModel, itemID: hero.id, transitionNamespace: nil)))
+                        .id(hero.id)
                     if top.count > 1 {
                         TopRail(items: Array(top.dropFirst()), model: topModel)
                     }
@@ -107,12 +108,16 @@ private struct HeroCard: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     let item: FeedItem
     let route: Route
-    @State private var info: ItemInfo?
+    @State private var details: ItemDetails
     @State private var looping: LoopingPlayer?
 
-    private var tags: [Tag] {
-        (info?.tags ?? []).sorted { $0.confidence > $1.confidence }
+    init(item: FeedItem, route: Route) {
+        self.item = item
+        self.route = route
+        _details = State(initialValue: ItemDetails(itemID: item.id))
     }
+
+    private var tags: [Tag] { details.info?.tags ?? [] }
 
     var body: some View {
         NavigationLink(value: route) {
@@ -123,7 +128,7 @@ private struct HeroCard: View {
                                        .init(color: .black.opacity(0.6), location: 0.65),
                                        .init(color: .black.opacity(0.92), location: 1)],
                                startPoint: .top, endPoint: .bottom)
-                details.padding(20)
+                caption.padding(20)
             }
             // Portrait on phones; wide on regular-width screens like the opened iPhone Duo, so the
             // rail below still shows.
@@ -134,7 +139,7 @@ private struct HeroCard: View {
         }
         .buttonStyle(CardPressStyle())
         .padding(.horizontal, 16)
-        .task(id: item.id) { info = try? await APIClient.shared.itemInfo(item.id) }
+        .task { await details.loadIfNeeded() }
         .onAppear {
             guard item.isVideo, looping == nil else { return }
             looping = LoopingPlayer(url: item.mediaURL, muted: true)
@@ -166,7 +171,7 @@ private struct HeroCard: View {
         }
     }
 
-    private var details: some View {
+    private var caption: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Nr. 1 heute".uppercased())
                 .font(.caption.weight(.bold))

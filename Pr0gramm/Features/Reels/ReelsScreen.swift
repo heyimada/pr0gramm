@@ -214,10 +214,18 @@ private struct ReelPage: View {
     let pool: ReelPlayerPool
     let insets: EdgeInsets
 
-    @State private var info: ItemInfo?
+    @State private var details: ItemDetails
     @State private var showsComments = false
     @AppStorage("reelsFitMedia") private var fitsMedia = false
     @GestureState private var pinch: CGFloat = 1
+
+    init(item: FeedItem, isActive: Bool, pool: ReelPlayerPool, insets: EdgeInsets) {
+        self.item = item
+        self.isActive = isActive
+        self.pool = pool
+        self.insets = insets
+        _details = State(initialValue: ItemDetails(itemID: item.id))
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -237,11 +245,11 @@ private struct ReelPage: View {
         }
         .clipped()
         .task(id: isActive) {
-            guard isActive, info == nil else { return }
-            info = try? await APIClient.shared.itemInfo(item.id)
+            guard isActive else { return }
+            await details.loadIfNeeded()
         }
         .sheet(isPresented: $showsComments) {
-            ReelCommentsSheet(item: item, info: $info)
+            ReelCommentsSheet(item: item, details: details)
         }
     }
 
@@ -297,7 +305,7 @@ private struct ReelPage: View {
             }
             .buttonStyle(.plain)
 
-            if let tags = info?.tags.sorted(by: { $0.confidence > $1.confidence }).prefix(4), !tags.isEmpty {
+            if let tags = details.info?.tags.prefix(4), !tags.isEmpty {
                 FlowLayout(spacing: 10) {
                     ForEach(Array(tags)) { tag in
                         NavigationLink(value: Route.tag(tag.tag)) {
@@ -341,7 +349,7 @@ private struct ReelPage: View {
             action(vote == -1 ? "minus.circle.fill" : "minus.circle", "Minus", tint: vote == -1 ? .pr0Orange : .white) {
                 cast(-1)
             }
-            action("bubble.right.fill", info.map { "\($0.comments.count)" } ?? "Kommentare") {
+            action("bubble.right.fill", details.info.map { "\($0.comments.count)" } ?? "Kommentare") {
                 showsComments = true
             }
             if item.isVideo {
@@ -382,19 +390,17 @@ private struct ReelPage: View {
 private struct ReelCommentsSheet: View {
     @Environment(\.dismiss) private var dismiss
     let item: FeedItem
-    @Binding var info: ItemInfo?
-    @State private var replyTarget: Comment?
-    @State private var composes = false
+    let details: ItemDetails
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    if let info {
+                    if let info = details.info {
                         TagsSection(tags: info.tags)
-                        CommentsSection(item: item, comments: info.comments,
-                                        onComment: { replyTarget = nil; composes = true },
-                                        onReply: { replyTarget = $0; composes = true })
+                        CommentsSection(item: item, details: details)
+                    } else if let error = details.error {
+                        ErrorView(error: error, retry: details.load)
                     } else {
                         ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
                     }
@@ -409,14 +415,7 @@ private struct ReelCommentsSheet: View {
                     Button("Fertig", role: .confirm) { dismiss() }
                 }
             }
-            .task {
-                if info == nil { info = try? await APIClient.shared.itemInfo(item.id) }
-            }
-            .sheet(isPresented: $composes) {
-                CommentComposer(itemId: item.id, parentId: replyTarget?.id ?? 0, replyingTo: replyTarget?.name) { comments in
-                    if let comments, let tags = info?.tags { info = ItemInfo(tags: tags, comments: comments) }
-                }
-            }
+            .task { await details.loadIfNeeded() }
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(Color.pr0Background)

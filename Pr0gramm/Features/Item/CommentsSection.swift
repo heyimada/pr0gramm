@@ -36,11 +36,12 @@ struct CommentNode: Identifiable {
 struct CommentsSection: View {
     @Environment(Session.self) private var session
     let item: FeedItem
-    let comments: [Comment]
-    let onComment: () -> Void
-    let onReply: (Comment) -> Void
+    let details: ItemDetails
 
     @State private var collapsed: Set<Int> = []
+    @State private var replyTarget: ReplyTarget?
+
+    private var comments: [Comment] { details.info?.comments ?? [] }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -49,7 +50,9 @@ struct CommentsSection: View {
                     .font(.title3.weight(.semibold))
                 Spacer()
                 if session.isLoggedIn {
-                    Button("Kommentieren", systemImage: "square.and.pencil", action: onComment)
+                    Button("Kommentieren", systemImage: "square.and.pencil") {
+                        replyTarget = ReplyTarget(parentId: 0, name: item.user)
+                    }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                 }
@@ -62,9 +65,15 @@ struct CommentsSection: View {
                         isOP: node.comment.name == item.user,
                         isCollapsed: collapsed.contains(node.id),
                         onToggle: { toggle(node.id) },
-                        onReply: { onReply(node.comment) }
+                        onReply: { replyTarget = ReplyTarget(parentId: node.comment.id, name: node.comment.name) }
                     )
                 }
+            }
+        }
+        .sheet(item: $replyTarget) { target in
+            CommentComposer(itemId: item.id, parentId: target.parentId,
+                            replyingTo: target.parentId == 0 ? nil : target.name) { comments in
+                Task { await details.apply(postedComments: comments) }
             }
         }
     }
@@ -74,6 +83,12 @@ struct CommentsSection: View {
             if collapsed.contains(id) { collapsed.remove(id) } else { collapsed.insert(id) }
         }
     }
+}
+
+private struct ReplyTarget: Identifiable {
+    let parentId: Int
+    let name: String
+    var id: Int { parentId }
 }
 
 private struct CommentRow: View {

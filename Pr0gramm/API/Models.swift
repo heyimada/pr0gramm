@@ -96,8 +96,17 @@ struct MediaVariant: Codable, Hashable, Sendable {
 }
 
 struct ItemInfo: Decodable {
+    /// Highest confidence first.
     let tags: [Tag]
-    let comments: [Comment]
+    var comments: [Comment]
+
+    private enum CodingKeys: String, CodingKey { case tags, comments }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        tags = try container.decode([Tag].self, forKey: .tags).sorted { $0.confidence > $1.confidence }
+        comments = try container.decode([Comment].self, forKey: .comments)
+    }
 }
 
 struct Tag: Decodable, Identifiable, Hashable {

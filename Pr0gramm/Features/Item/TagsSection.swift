@@ -7,8 +7,7 @@ struct TagsSection: View {
     private static let collapsedCount = 5
 
     private var visibleTags: [Tag] {
-        let sorted = tags.sorted { $0.confidence > $1.confidence }
-        return expanded ? sorted : Array(sorted.prefix(Self.collapsedCount))
+        expanded ? tags : Array(tags.prefix(Self.collapsedCount))
     }
 
     var body: some View {
