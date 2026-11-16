@@ -118,8 +118,13 @@ $ad swipe 700 300 150 300 > /dev/null 2>&1; sleep 4
 fold_keeps "a post past the first" '\[navigation-bar\] "[^"]+"'
 $ad back > /dev/null 2>&1
 
-tap 'role=button label="Suchen"' 3
-$ad fill 'role=search' "smoketest" > /dev/null 2>&1
+sleep 2
+for attempt in {1..3}; do
+    tap 'role=button label="Suchen"' 3
+    shows '\[search\]' && break
+done
+tap "$(ref '\[search\]')" 1
+$ad type "smoketest" > /dev/null 2>&1
 $ad type $'\n' > /dev/null 2>&1; sleep 5
 check "search results" '"Als Feed speichern"'
 tap 'role=button label="Als Feed speichern"' 3
