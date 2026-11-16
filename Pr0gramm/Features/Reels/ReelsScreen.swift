@@ -303,7 +303,7 @@ private struct ReelPage: View {
             HStack(spacing: 4) {
                 Text(item.createdAt.pr0Age)
                 Text("·")
-                ScoreView(score: item.score + session.vote(for: .item, id: item.id), created: item.createdAt)
+                ItemScore(item: item)
                 if !item.createdAt.isScoreHidden { Text("Benis") }
             }
             .font(.footnote)
