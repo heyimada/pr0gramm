@@ -128,7 +128,9 @@ final class Session {
         guard let userName, !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
-        userScore = try? await APIClient.shared.profile(userName, flags: flags).user.score
+        if let score = try? await APIClient.shared.profile(userName, flags: flags).user.score {
+            userScore = score
+        }
         guard let response = try? await APIClient.shared.sync(offset: syncOffset) else { return }
         if let log = response.log, let data = Data(base64Encoded: log) {
             for entry in Self.votes(fromLog: data) {
