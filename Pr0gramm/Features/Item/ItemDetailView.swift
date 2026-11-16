@@ -271,23 +271,6 @@ struct ItemInfoBar: View {
     }
 }
 
-/// Label of a pill-shaped action button in the post's action row.
-struct ActionPillLabel: View {
-    let title: String
-    let symbol: String
-    var tint: Color = .pr0Text
-
-    var body: some View {
-        Label(title, systemImage: symbol)
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(tint)
-            .padding(.horizontal, 14)
-            .frame(height: 38)
-            .background(Color.pr0Pill, in: .capsule)
-            .contentShape(.capsule)
-    }
-}
-
 /// ⊕ score ⊖ in one capsule.
 struct VoteCapsule: View {
     @Environment(Session.self) private var session

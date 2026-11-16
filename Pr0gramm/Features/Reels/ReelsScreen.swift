@@ -227,24 +227,6 @@ private struct ReelsFeed: View {
     }
 }
 
-extension View {
-    func glassCircle() -> some View {
-        #if os(visionOS)
-        glassBackgroundEffect(in: .circle)
-        #else
-        glassEffect(.regular, in: .circle)
-        #endif
-    }
-
-    func glassCapsule() -> some View {
-        #if os(visionOS)
-        glassBackgroundEffect(in: .capsule)
-        #else
-        glassEffect(.regular, in: .capsule)
-        #endif
-    }
-}
-
 /// One reel: media, caption bottom-left, action column bottom-right.
 private struct ReelPage: View {
     @Environment(Session.self) private var session

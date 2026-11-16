@@ -22,3 +22,15 @@ struct PlayerLayerView: UIViewRepresentable {
         view.playerLayer.videoGravity = gravity
     }
 }
+
+/// Owns an `AVQueuePlayer` that loops a single video.
+@Observable
+final class LoopingPlayer {
+    let player = AVQueuePlayer()
+    @ObservationIgnored private var looper: AVPlayerLooper?
+
+    init(url: URL, muted: Bool) {
+        looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+        player.isMuted = muted
+    }
+}

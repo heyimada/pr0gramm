@@ -270,3 +270,56 @@ struct ErrorView: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+struct RemoteImage: View {
+    let url: URL
+
+    var body: some View {
+        AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.2))) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFit()
+            case .failure:
+                Image(systemName: "exclamationmark.triangle").foregroundStyle(.secondary)
+            default:
+                ProgressView()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Label of a pill-shaped action button in the post's action row.
+struct ActionPillLabel: View {
+    let title: String
+    let symbol: String
+    var tint: Color = .pr0Text
+
+    var body: some View {
+        Label(title, systemImage: symbol)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 14)
+            .frame(height: 38)
+            .background(Color.pr0Pill, in: .capsule)
+            .contentShape(.capsule)
+    }
+}
+
+extension View {
+    func glassCircle() -> some View {
+        #if os(visionOS)
+        glassBackgroundEffect(in: .circle)
+        #else
+        glassEffect(.regular, in: .circle)
+        #endif
+    }
+
+    func glassCapsule() -> some View {
+        #if os(visionOS)
+        glassBackgroundEffect(in: .capsule)
+        #else
+        glassEffect(.regular, in: .capsule)
+        #endif
+    }
+}

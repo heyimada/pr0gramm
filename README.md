@@ -79,8 +79,8 @@ AltStore PAL; see [docs/ALTSTORE.md](docs/ALTSTORE.md).
 
 ```
 Pr0gramm/
-  API/        API client, models, session (login, votes, sync)
-  App/        app entry point, tabs, navigation
+  API/        API client, models, site URLs
+  App/        app entry point, tabs, navigation, session (login, votes, sync)
   Features/   one folder per screen (Feed, Item, Reels, Search, Profile, ...)
   Shared/     theme and reusable views
 scripts/      device install, TestFlight upload and icon generator

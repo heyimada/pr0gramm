@@ -63,3 +63,15 @@ final class FeedModel {
         await loadMore(flags: flags)
     }
 }
+
+/// One model per query so switching back keeps loaded items.
+final class FeedCache {
+    private var models: [FeedQuery: FeedModel] = [:]
+
+    func model(for query: FeedQuery) -> FeedModel {
+        if let model = models[query] { return model }
+        let model = FeedModel(query: query)
+        models[query] = model
+        return model
+    }
+}
