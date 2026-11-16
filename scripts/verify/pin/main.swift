@@ -121,6 +121,7 @@ func describe(_ route: Route?) -> String {
     case .item(let id): "item \(id)"
     case .download(let id): "download \(id)"
     case .pager: "pager"
+    case .tag(let tag): "tag \(tag)"
     default: "other \(String(describing: route))"
     }
 }
@@ -200,3 +201,20 @@ for (id, action) in [(258, UInt8(3)), (7, 1), (65_536, 6), (9, 7), (10, 2), (11,
 }
 show("vote log base64", log.base64EncodedString())
 show("decoded", Session.votes(fromLog: log).map { "\($0.target):\($0.id)=\($0.value)" })
+
+print("## Added after review")
+show("search -word", search { $0.text = "kadse -hund" })
+show("search extended -word", search { $0.text = "! kadse -hund" })
+show("reels feed tagged !", reels(FeedQuery(stream: .new, tags: "!")))
+show("Site", [Site.post(42), Site.user("cha0s"), Site.badge("a.png"), Site.api].map(\.absoluteString))
+show("Site.isOwn", ["https://pr0gramm.com/x", "https://img.pr0gramm.com/x", "https://pr0.app/x", "https://evil-pr0gramm.com/x"]
+    .map { Site.isOwn(URL(string: $0)!) })
+let infoJSON = #"{"tags":[{"id":1,"confidence":0.2,"tag":"b"},{"id":2,"confidence":0.9,"tag":"a"},{"id":3,"confidence":0.5,"tag":"c"}],"comments":[]}"#
+show("ItemInfo tag order", (try? JSONDecoder().decode(ItemInfo.self, from: Data(infoJSON.utf8)))?.tags.map(\.tag))
+let scoreSuite = "pin.score"
+let scoreDefaults = UserDefaults(suiteName: scoreSuite)!
+scoreDefaults.removePersistentDomain(forName: scoreSuite)
+scoreDefaults.set(Data(#"{"items":{"42":1},"comments":{},"tags":{}}"#.utf8), forKey: "votes")
+let scoreSession = Session(defaults: scoreDefaults)
+show("score with an earlier vote", [scoreSession.score(of: item), scoreSession.score(of: item)])
+scoreDefaults.removePersistentDomain(forName: scoreSuite)

@@ -105,3 +105,11 @@ selected flags after reset-on-launch => 1
 ## Vote log
 vote log base64 => AgEAAAMHAAAAAQAAAQAGCQAAAAcKAAAAAgsAAAAM
 decoded => ["item:258=1", "item:7=-1", "comment:65536=1", "tag:9=-1", "item:10=0"]
+## Added after review
+search -word => {"stream":"top","tags":"! kadse -hund"}
+search extended -word => {"stream":"top","tags":"! kadse -hund"}
+reels feed tagged ! => {"stream":"new","tags":"! video"}
+Site => ["https://pr0gramm.com/new/42", "https://pr0gramm.com/user/cha0s", "https://pr0gramm.com/media/badges/a.png", "https://pr0gramm.com/api/"]
+Site.isOwn => [true, true, true, false]
+ItemInfo tag order => ["a", "c", "b"]
+score with an earlier vote => [8, 8]
