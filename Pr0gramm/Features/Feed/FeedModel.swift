@@ -13,6 +13,7 @@ final class FeedModel {
     private(set) var error: Error?
 
     @ObservationIgnored private var loadedFlags: ContentFlags?
+    @ObservationIgnored private var generation = 0
 
     init(query: FeedQuery) {
         self.query = query
@@ -30,8 +31,11 @@ final class FeedModel {
     }
 
     func reload(flags: ContentFlags) async {
+        generation += 1
+        let started = generation
         do {
             let response = try await APIClient.shared.items(query, flags: flags)
+            guard started == generation else { return }
             items = response.items
             atEnd = response.atEnd
             loadedFlags = flags
@@ -39,23 +43,27 @@ final class FeedModel {
             pagingFailed = false
         } catch is CancellationError {
         } catch {
+            guard started == generation else { return }
             self.error = error
         }
     }
 
     private func loadMore(flags: ContentFlags) async {
         guard !isLoading, !atEnd, let last = items.last else { return }
+        let started = generation
         isLoading = true
         pagingFailed = false
         defer { isLoading = false }
         do {
             let response = try await APIClient.shared.items(query, flags: flags, older: query.cursor(for: last))
+            guard started == generation else { return }
             let known = Set(items.map(\.id))
             items.append(contentsOf: response.items.filter { !known.contains($0.id) })
             atEnd = response.atEnd || response.items.isEmpty
         } catch is CancellationError {
         } catch let error as URLError where error.code == .cancelled {
         } catch {
+            guard started == generation else { return }
             pagingFailed = true
         }
     }
