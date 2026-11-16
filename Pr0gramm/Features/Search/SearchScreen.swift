@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct SearchScreen: View {
-    @Environment(AppState.self) private var app
     @Environment(FeedLibrary.self) private var library
+    @State private var search = SearchOptions()
     @State private var results: FeedModel?
     @AppStorage("recentSearches") private var recentStorage = ""
 
@@ -11,11 +11,10 @@ struct SearchScreen: View {
     }
 
     var body: some View {
-        @Bindable var app = app
         Group {
             if let results {
                 FeedScreenContent(model: results) { stream in
-                    app.search.stream = stream
+                    search.stream = stream
                     submit()
                 }
                 .id(ObjectIdentifier(results))
@@ -23,39 +22,38 @@ struct SearchScreen: View {
                 options
             }
         }
-        .searchable(text: $app.search.text, prompt: "Tags, z. B. kadse")
-        .onChange(of: library.defaultStream, initial: true) { app.search.stream = library.defaultStream }
+        .searchable(text: $search.text, prompt: "Tags, z. B. kadse")
+        .onChange(of: library.defaultStream, initial: true) { search.stream = library.defaultStream }
         .onSubmit(of: .search, submit)
-        .onChange(of: app.search.text) {
-            if app.search.text.isEmpty { results = nil }
+        .onChange(of: search.text) {
+            if search.text.isEmpty { results = nil }
         }
     }
 
     private var options: some View {
-        @Bindable var app = app
-        return Form {
+        Form {
             Section("Suchen in") {
-                Picker("Suchen in", selection: $app.search.stream) {
+                Picker("Suchen in", selection: $search.stream) {
                     ForEach(FeedStream.searchable) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
 
-                Picker("Medien", selection: $app.search.media) {
+                Picker("Medien", selection: $search.media) {
                     ForEach(SearchOptions.Media.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
             }
 
             Section {
-                Toggle("Mindest-Benis", isOn: $app.search.requiresMinimumScore.animation())
-                if app.search.requiresMinimumScore {
+                Toggle("Mindest-Benis", isOn: $search.requiresMinimumScore.animation())
+                if search.requiresMinimumScore {
                     LabeledContent("Mindestens") {
-                        Text("\(app.search.minimumScore) Benis").monospacedDigit()
+                        Text("\(search.minimumScore) Benis").monospacedDigit()
                     }
-                    Slider(value: $app.search.scoreSlider, in: 0...100)
+                    Slider(value: $search.scoreSlider, in: 0...100)
                 }
-                TextField("Tags ausschließen, z. B. kadse fogel", text: $app.search.excludedTags)
+                TextField("Tags ausschließen, z. B. kadse fogel", text: $search.excludedTags)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
             }
@@ -64,7 +62,7 @@ struct SearchScreen: View {
                 Section("Zuletzt gesucht") {
                     ForEach(recent, id: \.self) { term in
                         Button(term) {
-                            app.search.text = term
+                            search.text = term
                             submit()
                         }
                         .foregroundStyle(Color.pr0Text)
@@ -81,9 +79,9 @@ struct SearchScreen: View {
     }
 
     private func submit() {
-        guard let query = app.search.query else { return }
+        guard let query = search.query else { return }
         results = FeedModel(query: query)
-        let term = app.search.text.trimmingCharacters(in: .whitespaces)
+        let term = search.text.trimmingCharacters(in: .whitespaces)
         if !term.isEmpty {
             recentStorage = ([term] + recent.filter { $0 != term }).prefix(15).joined(separator: "\n")
         }

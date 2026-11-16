@@ -80,49 +80,6 @@ struct ScoreView: View {
     }
 }
 
-struct VoteButtons: View {
-    @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
-    let target: VoteTarget
-    let id: Int
-    var size: CGFloat = 20
-    var axis: Axis = .vertical
-
-    @State private var failed = false
-
-    var body: some View {
-        let vote = session.vote(for: target, id: id)
-        let layout = axis == .vertical
-            ? AnyLayout(VStackLayout(spacing: size * 0.3))
-            : AnyLayout(HStackLayout(spacing: size * 0.4))
-        layout {
-            button(value: 1, current: vote, symbol: "plus.circle", label: "Plus")
-            button(value: -1, current: vote, symbol: "minus.circle", label: "Minus")
-        }
-        .alert("Abstimmen fehlgeschlagen", isPresented: $failed) {}
-    }
-
-    private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
-        let active = current == value
-        return Button {
-            Task {
-                do { try await app.toggleVote(target, id: id, value, in: session) } catch { failed = true }
-            }
-        } label: {
-            Image(systemName: active ? "\(symbol).fill" : symbol)
-                .resizable()
-                .fontWeight(.light)
-                .frame(width: size, height: size)
-                .foregroundStyle(active ? Color.pr0Orange : Color.pr0Secondary)
-                .contentShape(.rect.inset(by: -6))
-        }
-        .buttonStyle(.plain)
-        .sensoryFeedback(.selection, trigger: active)
-        .accessibilityLabel(label)
-        .accessibilityAddTraits(active ? .isSelected : [])
-    }
-}
-
 struct SegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value

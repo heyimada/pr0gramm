@@ -18,6 +18,19 @@ struct FeedScreen: View {
     }
 }
 
+/// Root feed of a single-stream tab; keeps its model (and scroll position) for the tab's lifetime.
+struct StreamFeed: View {
+    @State private var model: FeedModel
+
+    init(stream: FeedStream) {
+        _model = State(initialValue: FeedModel(query: FeedQuery(stream: stream)))
+    }
+
+    var body: some View {
+        FeedGrid(model: model)
+    }
+}
+
 struct FeedScreenContent: View {
     @Environment(FeedLibrary.self) private var library
     let model: FeedModel

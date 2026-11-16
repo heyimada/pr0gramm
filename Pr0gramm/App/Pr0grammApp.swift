@@ -119,16 +119,3 @@ private struct TabStack: View {
         }
     }
 }
-
-/// Root feed of a single-stream tab; keeps its model (and scroll position) for the tab's lifetime.
-private struct StreamFeed: View {
-    @State private var model: FeedModel
-
-    init(stream: FeedStream) {
-        _model = State(initialValue: FeedModel(query: FeedQuery(stream: stream)))
-    }
-
-    var body: some View {
-        FeedGrid(model: model)
-    }
-}

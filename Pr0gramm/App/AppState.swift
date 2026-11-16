@@ -71,7 +71,6 @@ final class AppState {
     var tab: AppTab
     var showsLogin = false
     var showsSettings = false
-    var search = SearchOptions()
 
     var tabOrder: [AppTab] {
         didSet { UserDefaults.standard.set(tabOrder.map(\.rawValue), forKey: Self.tabOrderKey) }

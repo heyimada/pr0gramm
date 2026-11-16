@@ -10,18 +10,7 @@ struct ContentFlags: OptionSet, Hashable, Codable, Sendable {
     static let nsfp = ContentFlags(rawValue: 8)
     static let pol = ContentFlags(rawValue: 16)
 
-    static let filters: [(flag: ContentFlags, title: String, subtitle: String)] = [
-        (.sfw, "SFW", "Safe for work"),
-        (.nsfw, "NSFW", "Nackte Haut, Pornos und leicht offensiver Kram"),
-        (.nsfl, "NSFL", "Alles. Gewalt, ekliger Scheiß"),
-        (.pol, "POL", "Politik, Wirtschaft, Kriminalität, Konflikte"),
-    ]
-
-    static let switchable = filters.reduce(into: ContentFlags()) { $0.formUnion($1.flag) }
-
-    static func filterTitles(in flags: ContentFlags) -> [String] {
-        filters.filter { flags.contains($0.flag) }.map(\.title)
-    }
+    static let switchable: ContentFlags = [.sfw, .nsfw, .nsfl, .pol]
 }
 
 struct FeedResponse: Decodable {

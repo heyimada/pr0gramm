@@ -199,6 +199,45 @@ private struct CommentRow: View {
     }
 }
 
+struct VoteButtons: View {
+    @Environment(Session.self) private var session
+    @Environment(AppState.self) private var app
+    let target: VoteTarget
+    let id: Int
+    var size: CGFloat = 20
+
+    @State private var failed = false
+
+    var body: some View {
+        let vote = session.vote(for: target, id: id)
+        VStack(spacing: size * 0.3) {
+            button(value: 1, current: vote, symbol: "plus.circle", label: "Plus")
+            button(value: -1, current: vote, symbol: "minus.circle", label: "Minus")
+        }
+        .alert("Abstimmen fehlgeschlagen", isPresented: $failed) {}
+    }
+
+    private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
+        let active = current == value
+        return Button {
+            Task {
+                do { try await app.toggleVote(target, id: id, value, in: session) } catch { failed = true }
+            }
+        } label: {
+            Image(systemName: active ? "\(symbol).fill" : symbol)
+                .resizable()
+                .fontWeight(.light)
+                .frame(width: size, height: size)
+                .foregroundStyle(active ? Color.pr0Orange : Color.pr0Secondary)
+                .contentShape(.rect.inset(by: -6))
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: active)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(active ? .isSelected : [])
+    }
+}
+
 enum CommentText {
     private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
     private static let mention = /@([A-Za-z0-9_-]{2,32})/
