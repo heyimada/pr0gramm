@@ -36,13 +36,13 @@ final class APIClient {
 
     // MARK: Transport
 
-    func get<T: Decodable>(_ path: String, _ query: [String: String?] = [:]) async throws -> T {
+    private func get<T: Decodable>(_ path: String, _ query: [String: String?] = [:]) async throws -> T {
         var url = base.appending(path: path)
         url.append(queryItems: query.compactMap { key, value in value.map { URLQueryItem(name: key, value: $0) } })
         return try await send(URLRequest(url: url))
     }
 
-    func post<T: Decodable>(_ path: String, _ form: [String: String]) async throws -> T {
+    private func post<T: Decodable>(_ path: String, _ form: [String: String]) async throws -> T {
         var request = URLRequest(url: base.appending(path: path))
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded; charset=utf-8", forHTTPHeaderField: "Content-Type")

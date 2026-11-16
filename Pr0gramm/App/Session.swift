@@ -163,14 +163,13 @@ final class Session {
     }
 
     private func loadVotes() {
-        guard let data = defaults.data(forKey: Keys.votes),
-              let stored = try? JSONDecoder().decode(StoredVotes.self, from: data) else { return }
+        guard let stored = defaults.decoded(StoredVotes.self, forKey: Keys.votes) else { return }
         votes = [.item: stored.items, .comment: stored.comments, .tag: stored.tags]
     }
 
     private func saveVotes() {
         let stored = StoredVotes(items: votes[.item] ?? [:], comments: votes[.comment] ?? [:], tags: votes[.tag] ?? [:])
-        defaults.set(try? JSONEncoder().encode(stored), forKey: Keys.votes)
+        defaults.setEncoded(stored, forKey: Keys.votes)
         defaults.set(syncOffset, forKey: Keys.syncOffset)
     }
 

@@ -3,7 +3,6 @@ import SwiftUI
 
 struct PlayerLayerView: UIViewRepresentable {
     let player: AVPlayer?
-    var gravity: AVLayerVideoGravity = .resizeAspect
 
     final class LayerView: UIView {
         override class var layerClass: AnyClass { AVPlayerLayer.self }
@@ -18,14 +17,13 @@ struct PlayerLayerView: UIViewRepresentable {
 
     func updateUIView(_ view: LayerView, context: Context) {
         view.playerLayer.player = player
-        view.playerLayer.videoGravity = gravity
+        view.playerLayer.videoGravity = .resizeAspectFill
     }
 }
 
-@Observable
 final class LoopingPlayer {
     let player = AVQueuePlayer()
-    @ObservationIgnored private var looper: AVPlayerLooper?
+    private var looper: AVPlayerLooper?
 
     init(url: URL, muted: Bool) {
         looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))

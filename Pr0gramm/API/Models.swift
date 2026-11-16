@@ -65,6 +65,8 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
 
     var fullsizeURL: URL? { fullsize.isEmpty ? nil : MediaHost.full.url(fullsize) }
 
+    var bestURL: URL { fullsizeURL ?? mediaURL }
+
     var sourceURL: URL? {
         guard let source,
               let url = URL(string: source.trimmingCharacters(in: .whitespacesAndNewlines)),
@@ -120,8 +122,6 @@ struct Comment: Decodable, Identifiable, Hashable {
 
 struct Profile: Decodable {
     struct User: Decodable {
-        let id: Int
-        let name: String
         let registered: Int
         let score: Int
         let mark: Int
@@ -165,7 +165,6 @@ struct SyncResponse: Decodable {
 }
 
 struct PostCommentResponse: Decodable {
-    let commentId: Int?
     let comments: [Comment]?
 }
 

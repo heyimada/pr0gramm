@@ -5,7 +5,6 @@ import SwiftUI
 struct MediaWindow: View {
     static let id = "media"
 
-    @Environment(Session.self) private var session
     let item: FeedItem
     @State private var looping: LoopingPlayer?
 
@@ -18,7 +17,7 @@ struct MediaWindow: View {
                     ProgressView()
                 }
             } else {
-                RemoteImage(url: item.fullsizeURL ?? item.mediaURL)
+                RemoteImage(url: item.bestURL)
             }
         }
         .aspectRatio(item.aspectRatio, contentMode: .fit)

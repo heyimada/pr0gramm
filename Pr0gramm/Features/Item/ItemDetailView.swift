@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct ItemDetailView: View {
-    @Environment(Session.self) private var session
     @Environment(\.horizontalSizeClass) private var sizeClass
     let item: FeedItem
     let isActive: Bool
@@ -203,9 +202,7 @@ struct ItemInfoBar: View {
 
                 Menu {
                     Button("Link kopieren", systemImage: "link") {
-                        #if canImport(UIKit)
                         UIPasteboard.general.url = item.webURL
-                        #endif
                     }
                     Button("Im Browser öffnen", systemImage: "safari") { openURL(item.webURL) }
                     #if os(visionOS)

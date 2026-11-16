@@ -178,9 +178,7 @@ private struct CommentRow: View {
 
             Menu {
                 Button("Text kopieren", systemImage: "doc.on.doc") {
-                    #if canImport(UIKit)
                     UIPasteboard.general.string = node.comment.content
-                    #endif
                 }
                 if node.replyCount > 0 {
                     Button(isCollapsed ? "Antworten aufklappen" : "Antworten einklappen",

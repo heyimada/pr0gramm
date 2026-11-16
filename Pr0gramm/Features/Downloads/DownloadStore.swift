@@ -53,7 +53,7 @@ final class DownloadStore {
         inProgress.insert(item.id)
         defer { inProgress.remove(item.id) }
 
-        let source = item.fullsizeURL ?? item.mediaURL
+        let source = item.bestURL
         let (temporary, response) = try await URLSession.shared.download(from: source)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             throw APIError.http(http.statusCode)

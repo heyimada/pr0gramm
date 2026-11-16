@@ -152,7 +152,7 @@ private struct HeroCard: View {
                 if item.isVideo {
                     ZStack {
                         AsyncImage(url: item.thumbnailURL) { $0.resizable().scaledToFill() } placeholder: { Color.clear }
-                        PlayerLayerView(player: looping?.player, gravity: .resizeAspectFill)
+                        PlayerLayerView(player: looping?.player)
                     }
                 } else {
                     AsyncImage(url: item.mediaURL) { $0.resizable().scaledToFill() } placeholder: {

@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct ReelsScreen: View {
-    @Environment(Session.self) private var session
     @Environment(FeedLibrary.self) private var library
     @State private var store = ReelsFilterStore()
     @State private var selection: FeedSource?
@@ -243,7 +242,7 @@ private struct ReelPage: View {
             // Laid out at fill size and scaled down, so the video layer animates as one transform.
             Group {
                 if item.isVideo {
-                    PlayerLayerView(player: pool.players[item.id]?.player, gravity: .resizeAspectFill)
+                    PlayerLayerView(player: pool.players[item.id]?.player)
                 } else {
                     RemoteImage(url: item.mediaURL)
                 }

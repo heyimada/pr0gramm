@@ -59,16 +59,12 @@ struct ReelsFilterSheet: View {
                     Button {
                         withAnimation { tags.wrappedValue.removeAll { $0 == tag } }
                     } label: {
-                        HStack(spacing: 6) {
-                            Text(tag).lineLimit(1)
-                            Image(systemName: "xmark").font(.caption2.weight(.bold))
+                        TagCapsule(tint: tint) {
+                            HStack(spacing: 6) {
+                                Text(tag)
+                                Image(systemName: "xmark").font(.caption2.weight(.bold))
+                            }
                         }
-                        .font(.subheadline)
-                        .foregroundStyle(Color.pr0Text)
-                        .padding(.horizontal, 12)
-                        .frame(height: 32)
-                        .background(Color.pr0Pill, in: .capsule)
-                        .overlay(Capsule().strokeBorder(tint, lineWidth: 1.5))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("\(tag) entfernen")

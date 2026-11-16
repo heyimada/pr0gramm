@@ -8,13 +8,13 @@ final class FeedLibrary {
 
     var defaultSource: FeedSource {
         didSet {
-            UserDefaults.standard.set(try? JSONEncoder().encode(defaultSource), forKey: Self.defaultSourceKey)
+            UserDefaults.standard.setEncoded(defaultSource, forKey: Self.defaultSourceKey)
         }
     }
 
     private(set) var customFeeds: [CustomFeed] {
         didSet {
-            UserDefaults.standard.set(try? JSONEncoder().encode(customFeeds), forKey: Self.customFeedsKey)
+            UserDefaults.standard.setEncoded(customFeeds, forKey: Self.customFeedsKey)
             if case .custom(let id) = defaultSource, customFeed(id) == nil { defaultSource = .stream(.top) }
         }
     }
@@ -29,10 +29,8 @@ final class FeedLibrary {
     init(session: Session) {
         self.session = session
         let defaults = UserDefaults.standard
-        customFeeds = defaults.data(forKey: Self.customFeedsKey)
-            .flatMap { try? JSONDecoder().decode([CustomFeed].self, from: $0) } ?? []
-        defaultSource = defaults.data(forKey: Self.defaultSourceKey)
-            .flatMap { try? JSONDecoder().decode(FeedSource.self, from: $0) } ?? .stream(.top)
+        customFeeds = defaults.decoded([CustomFeed].self, forKey: Self.customFeedsKey) ?? []
+        defaultSource = defaults.decoded(FeedSource.self, forKey: Self.defaultSourceKey) ?? .stream(.top)
     }
 
     func customFeed(_ id: CustomFeed.ID) -> CustomFeed? {

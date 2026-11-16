@@ -37,18 +37,7 @@ private struct TagPill: View {
     var body: some View {
         let vote = session.vote(for: .tag, id: tag.id)
         NavigationLink(value: Route.tag(tag.tag)) {
-            Text(tag.tag)
-                .font(.subheadline)
-                .foregroundStyle(Color.pr0Text)
-                .lineLimit(1)
-                .padding(.horizontal, 12)
-                .frame(height: 32)
-                .background(Color.pr0Pill, in: .capsule)
-                .overlay {
-                    if vote != 0 {
-                        Capsule().strokeBorder(vote > 0 ? Color.upvoteGreen : Color.pr0Orange, lineWidth: 1.5)
-                    }
-                }
+            TagCapsule(tag.tag, tint: vote == 0 ? nil : vote > 0 ? .upvoteGreen : .pr0Orange)
                 .contentShape(.capsule)
         }
         .buttonStyle(.plain)

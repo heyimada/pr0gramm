@@ -22,13 +22,7 @@ struct Pr0grammApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environment(session)
-                .environment(app)
-                .environment(library)
-                .environment(downloads)
-                .environment(playback)
-                .tint(.pr0Orange)
-                .preferredColorScheme(.dark)
+                .pr0Environment(session: session, app: app, library: library, downloads: downloads, playback: playback)
         }
         #if os(visionOS)
         .defaultSize(width: 1100, height: 800)
@@ -38,16 +32,26 @@ struct Pr0grammApp: App {
         WindowGroup(id: MediaWindow.id, for: FeedItem.self) { $item in
             if let item {
                 MediaWindow(item: item)
-                    .environment(session)
-                    .environment(app)
-                    .environment(library)
-                    .environment(downloads)
-                    .environment(playback)
+                    .pr0Environment(session: session, app: app, library: library, downloads: downloads, playback: playback)
             }
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 900, height: 700)
         #endif
+    }
+}
+
+private extension View {
+    func pr0Environment(
+        session: Session, app: AppState, library: FeedLibrary, downloads: DownloadStore, playback: PlaybackSettings
+    ) -> some View {
+        environment(session)
+            .environment(app)
+            .environment(library)
+            .environment(downloads)
+            .environment(playback)
+            .tint(.pr0Orange)
+            .preferredColorScheme(.dark)
     }
 }
 
@@ -100,14 +104,18 @@ private struct TabStack: View {
     var body: some View {
         RoutedStack(router: app.routers[tab]!) {
             Group {
-                switch tab {
-                case .top, .new, .junk, .subscribed: StreamFeed(stream: tab.stream!)
-                case .profile: AccountScreen()
-                case .downloads: DownloadsScreen()
-                case .home: HomeScreen()
-                case .feed: StreamsScreen()
-                case .reels: ReelsScreen()
-                case .search: SearchScreen()
+                if let stream = tab.stream {
+                    StreamFeed(stream: stream)
+                } else {
+                    switch tab {
+                    case .top, .new, .junk, .subscribed: EmptyView()
+                    case .profile: AccountScreen()
+                    case .downloads: DownloadsScreen()
+                    case .home: HomeScreen()
+                    case .feed: StreamsScreen()
+                    case .reels: ReelsScreen()
+                    case .search: SearchScreen()
+                    }
                 }
             }
             #if os(iOS)

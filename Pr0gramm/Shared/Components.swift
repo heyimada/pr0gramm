@@ -80,6 +80,30 @@ struct ScoreView: View {
     }
 }
 
+struct TagCapsule<Content: View>: View {
+    var tint: Color?
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        content
+            .font(.subheadline)
+            .foregroundStyle(Color.pr0Text)
+            .lineLimit(1)
+            .padding(.horizontal, 12)
+            .frame(height: 32)
+            .background(Color.pr0Pill, in: .capsule)
+            .overlay {
+                if let tint { Capsule().strokeBorder(tint, lineWidth: 1.5) }
+            }
+    }
+}
+
+extension TagCapsule where Content == Text {
+    init(_ text: String, tint: Color? = nil) {
+        self.init(tint: tint) { Text(text) }
+    }
+}
+
 struct SegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value

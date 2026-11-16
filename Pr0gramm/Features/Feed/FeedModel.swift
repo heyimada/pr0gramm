@@ -41,7 +41,7 @@ final class FeedModel {
         }
     }
 
-    func loadMore(flags: ContentFlags) async {
+    private func loadMore(flags: ContentFlags) async {
         guard !isLoading, !atEnd, let last = items.last else { return }
         isLoading = true
         defer { isLoading = false }

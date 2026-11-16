@@ -31,7 +31,7 @@ struct MediaView: View {
                 .accessibilityLabel("Bild vergrößern")
                 #if os(iOS)
                 .fullScreenCover(isPresented: $showsViewer) {
-                    ZoomableImageViewer(url: item.fullsizeURL ?? item.mediaURL, aspectRatio: item.aspectRatio)
+                    ZoomableImageViewer(url: item.bestURL, aspectRatio: item.aspectRatio)
                 }
                 #endif
         }

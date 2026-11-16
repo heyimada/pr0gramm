@@ -44,13 +44,12 @@ struct ReelsFilter: Codable, Equatable {
 @Observable
 final class ReelsFilterStore {
     var filter: ReelsFilter {
-        didSet { UserDefaults.standard.set(try? JSONEncoder().encode(filter), forKey: Self.key) }
+        didSet { UserDefaults.standard.setEncoded(filter, forKey: Self.key) }
     }
 
     private static let key = "reelsFilter"
 
     init() {
-        filter = UserDefaults.standard.data(forKey: Self.key)
-            .flatMap { try? JSONDecoder().decode(ReelsFilter.self, from: $0) } ?? ReelsFilter()
+        filter = UserDefaults.standard.decoded(ReelsFilter.self, forKey: Self.key) ?? ReelsFilter()
     }
 }
