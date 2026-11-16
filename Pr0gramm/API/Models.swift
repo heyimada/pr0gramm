@@ -59,6 +59,8 @@ struct FeedItem: Codable, Identifiable, Hashable, Sendable {
         return MediaHost.image.url(image)
     }
 
+    var webURL: URL { Site.post(id) }
+
     var fullsizeURL: URL? { fullsize.isEmpty ? nil : MediaHost.full.url(fullsize) }
 
     var sourceURL: URL? {
@@ -120,7 +122,7 @@ struct Profile: Decodable {
     struct Badge: Decodable, Hashable {
         let image: String
         let description: String?
-        var imageURL: URL { URL(string: "https://pr0gramm.com/media/badges/")!.appending(path: image) }
+        var imageURL: URL { Site.badge(image) }
     }
 
     let user: User
@@ -165,7 +167,7 @@ enum MediaHost: String {
     case full = "full"
 
     func url(_ path: String) -> URL {
-        URL(string: "https://\(rawValue).pr0gramm.com/")!.appending(path: path)
+        URL(string: "https://\(rawValue).\(Site.host)/")!.appending(path: path)
     }
 }
 

@@ -392,7 +392,7 @@ private struct ReelPage: View {
                 }
             }
             ReelDownloadAction(item: item)
-            ShareLink(item: URL(string: "https://pr0gramm.com/new/\(item.id)")!) {
+            ShareLink(item: item.webURL) {
                 actionLabel("arrowshape.turn.up.right.fill", "Teilen", tint: .white)
             }
             .buttonStyle(.plain)

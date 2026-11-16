@@ -35,8 +35,7 @@ final class Router {
 
     /// Maps links like `pr0gramm.com/top/123`, `/new/katze/123`, `/user/name` or `pr0.app/...` to routes.
     static func route(for url: URL) -> Route? {
-        guard let host = url.host(),
-              host == "pr0gramm.com" || host.hasSuffix(".pr0gramm.com") || host == "pr0.app" else { return nil }
+        guard Site.isOwn(url) else { return nil }
         // Old-style links keep the path in the fragment: `pr0gramm.com/#top/123`.
         let path = url.fragment.map { "/" + $0 } ?? url.path()
         let parts = path.split(separator: "/").map { String($0).removingPercentEncoding ?? String($0) }

@@ -55,7 +55,7 @@ final class Session {
 
     /// The `me` cookie is URL-encoded JSON like `{"n":"name","id":"<32 hex chars>",...}`.
     private var meCookie: (name: String, id: String)? {
-        guard let cookie = HTTPCookieStorage.shared.cookies(for: URL(string: "https://pr0gramm.com")!)?
+        guard let cookie = HTTPCookieStorage.shared.cookies(for: Site.origin)?
             .first(where: { $0.name == "me" }),
             let json = cookie.value.removingPercentEncoding?.data(using: .utf8),
             let object = try? JSONSerialization.jsonObject(with: json) as? [String: Any],
@@ -92,7 +92,7 @@ final class Session {
             try? await APIClient.shared.logout(id: me.id, nonce: nonce)
         }
         let storage = HTTPCookieStorage.shared
-        storage.cookies(for: URL(string: "https://pr0gramm.com")!)?.forEach(storage.deleteCookie)
+        storage.cookies(for: Site.origin)?.forEach(storage.deleteCookie)
         userName = nil
         userScore = nil
         itemVotes = [:]

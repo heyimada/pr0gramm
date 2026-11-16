@@ -21,7 +21,7 @@ enum APIError: LocalizedError {
 final class APIClient {
     static let shared = APIClient()
 
-    private let base = URL(string: "https://pr0gramm.com/api/")!
+    private let base = Site.api
     private let session: URLSession
     private let decoder = JSONDecoder()
 

@@ -209,8 +209,6 @@ struct ItemInfoBar: View {
     @Environment(\.openURL) private var openURL
     let item: FeedItem
 
-    private var link: URL { URL(string: "https://pr0gramm.com/new/\(item.id)")! }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
@@ -237,10 +235,10 @@ struct ItemInfoBar: View {
                 Menu {
                     Button("Link kopieren", systemImage: "link") {
                         #if canImport(UIKit)
-                        UIPasteboard.general.url = link
+                        UIPasteboard.general.url = item.webURL
                         #endif
                     }
-                    Button("Im Browser öffnen", systemImage: "safari") { openURL(link) }
+                    Button("Im Browser öffnen", systemImage: "safari") { openURL(item.webURL) }
                     #if os(visionOS)
                     Button("In eigenem Fenster öffnen", systemImage: "macwindow.badge.plus") {
                         openWindow(id: MediaWindow.id, value: item)
@@ -260,7 +258,7 @@ struct ItemInfoBar: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     VoteCapsule(item: item)
-                    ShareLink(item: link) {
+                    ShareLink(item: item.webURL) {
                         ActionPillLabel(title: "Teilen", symbol: "square.and.arrow.up")
                     }
                     .buttonStyle(.plain)

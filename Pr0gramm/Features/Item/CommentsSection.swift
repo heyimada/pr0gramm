@@ -202,9 +202,8 @@ enum CommentText {
             result[attributedRange].link = url
         }
         for match in text.matches(of: mention) {
-            guard let attributedRange = Range(match.range, in: result),
-                  let url = URL(string: "https://pr0gramm.com/user/\(match.output.1)") else { continue }
-            result[attributedRange].link = url
+            guard let attributedRange = Range(match.range, in: result) else { continue }
+            result[attributedRange].link = Site.user(String(match.output.1))
         }
         return result
     }
