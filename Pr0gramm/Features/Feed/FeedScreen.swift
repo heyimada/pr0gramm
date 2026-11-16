@@ -21,13 +21,13 @@ struct FeedScreen: View {
 
 /// Grid plus, for tag searches, a glass stream switcher and a button to save the search as a feed.
 struct FeedScreenContent: View {
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     let model: FeedModel
     let onSelectStream: (FeedStream) -> Void
     @State private var newFeed: CustomFeed?
 
     private var savedFeed: CustomFeed? {
-        app.accessibleCustomFeeds.first { $0.query == model.query }
+        library.accessibleCustomFeeds.first { $0.query == model.query }
     }
 
     var body: some View {
@@ -59,7 +59,7 @@ struct FeedScreenContent: View {
     private var saveButton: some View {
         Button {
             if let savedFeed {
-                withAnimation { app.customFeeds.removeAll { $0.id == savedFeed.id } }
+                withAnimation { library.customFeeds.removeAll { $0.id == savedFeed.id } }
             } else {
                 newFeed = CustomFeed(query: model.query)
             }

@@ -3,7 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(Session.self) private var session
     @Environment(DownloadStore.self) private var downloads
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @Environment(\.dismiss) private var dismiss
     @State private var confirmsDeleteAll = false
 
@@ -21,7 +21,7 @@ struct SettingsView: View {
                         FeedSettingsView()
                     } label: {
                         LabeledContent {
-                            Text(app.title(for: app.defaultSource(for: session.flags)))
+                            Text(library.title(for: library.effectiveDefaultSource))
                         } label: {
                             Label("Feeds", systemImage: "square.stack")
                         }

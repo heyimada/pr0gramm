@@ -3,8 +3,7 @@ import SwiftUI
 /// Start tab: a feed switcher, the feed's top post of the day as a hero, a "Top 10 heute" rail,
 /// then the rest of the feed. Opens on the default feed (beliebt unless changed in the settings).
 struct HomeScreen: View {
-    @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @State private var cache = FeedCache()
     /// `nil` until the user picks a feed, so Start follows changes to the default feed.
     @State private var selection: FeedSource?
@@ -18,16 +17,15 @@ struct HomeScreen: View {
     }
 
     private var sources: [FeedSource] {
-        app.feedSources(for: session.flags, includesSubscriptions: session.isLoggedIn)
+        library.sources(withSubscriptions: true)
     }
 
     private var source: FeedSource {
-        let source = selection ?? app.defaultSource(for: session.flags)
-        return sources.contains(source) ? source : .stream(.top)
+        library.currentSource(picked: selection, in: sources)
     }
 
     private var sectionTitle: String {
-        switch (app.query(for: source) ?? .top).stream {
+        switch library.query(for: source).stream {
         case .top: "Frisch beliebt"
         case .new: "Frisch hochgeladen"
         case .junk: "Frischer Müll"
@@ -37,19 +35,19 @@ struct HomeScreen: View {
 
     /// Custom feeds name themselves above the heading; the streams' names are in it already.
     private var sectionKicker: String {
-        if case .custom = source { return app.title(for: source) }
+        if case .custom = source { return library.title(for: source) }
         return "Alle Posts"
     }
 
     var body: some View {
-        let query = app.query(for: source) ?? .top
+        let query = library.query(for: source)
         let feed = cache.model(for: query)
         let top = Array(ranked(feed).prefix(11))
         let topModel = FeedModel(items: top, query: query)
         FeedGrid(model: feed, showsBackground: false) {
             VStack(alignment: .leading, spacing: 28) {
                 SegmentCapsule(options: sources, selection: Binding(get: { source }, set: { selection = $0 }),
-                               title: app.title(for:))
+                               title: library.title(for:))
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 16)
                 if let hero = top.first {

@@ -3,8 +3,7 @@ import SwiftUI
 /// Feed tab: the stream grid with a floating glass capsule for beliebt · neu · müll (· abos)
 /// and the user's own feeds. Opens on the default feed from the settings.
 struct StreamsScreen: View {
-    @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     /// `nil` until the user picks something, so the tab follows changes to the default feed.
     @State private var selection: FeedSource?
     @State private var cache = FeedCache()
@@ -12,12 +11,11 @@ struct StreamsScreen: View {
     @State private var switcherHeight: CGFloat = 56
 
     private var sources: [FeedSource] {
-        app.feedSources(for: session.flags, includesSubscriptions: session.isLoggedIn)
+        library.sources(withSubscriptions: true)
     }
 
     private var current: FeedSource {
-        let source = selection ?? app.defaultSource(for: session.flags)
-        return sources.contains(source) ? source : .stream(.top)
+        library.currentSource(picked: selection, in: sources)
     }
 
     var body: some View {
@@ -34,7 +32,7 @@ struct StreamsScreen: View {
                     // Not lazy, so every feed keeps its scroll position.
                     HStack(spacing: 0) {
                         ForEach(sources, id: \.self) { source in
-                            let query = app.query(for: source) ?? .top
+                            let query = library.query(for: source)
                             FeedGrid(model: cache.model(for: query), onScroll: collapse.scrolled(to:))
                                 .contentMargins(.all, margins, for: .scrollContent)
                                 .contentMargins(.all, margins, for: .scrollIndicators)
@@ -56,7 +54,7 @@ struct StreamsScreen: View {
         .onChange(of: current) { collapse.reset() }
         .overlay(alignment: .top) {
             CollapsingSegmentCapsule(options: sources, selection: Binding(get: { current }, set: { selection = $0 }),
-                                     title: app.title(for:), isCollapsed: collapse.isCollapsed, onExpand: collapse.expand)
+                                     title: library.title(for:), isCollapsed: collapse.isCollapsed, onExpand: collapse.expand)
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 8)

@@ -2,34 +2,34 @@ import SwiftUI
 
 /// Choose the default feed and manage saved tag feeds.
 struct FeedSettingsView: View {
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @State private var editedFeed: CustomFeed?
     @State private var addsFeed = false
 
     private var sources: [FeedSource] {
-        FeedStream.searchable.map(FeedSource.stream) + app.accessibleCustomFeeds.map { .custom($0.id) }
+        FeedStream.searchable.map(FeedSource.stream) + library.accessibleCustomFeeds.map { .custom($0.id) }
     }
 
     /// Moves within the shown feeds while locked protected feeds keep their places.
     private func move(from offsets: IndexSet, to offset: Int) {
-        var shown = app.accessibleCustomFeeds
+        var shown = library.accessibleCustomFeeds
         shown.move(fromOffsets: offsets, toOffset: offset)
         var reordered = shown.makeIterator()
-        app.customFeeds = app.customFeeds.map { app.isAccessible($0) ? reordered.next()! : $0 }
+        library.customFeeds = library.customFeeds.map { library.isAccessible($0) ? reordered.next()! : $0 }
     }
 
     private func delete(at offsets: IndexSet) {
-        let ids = Set(offsets.map { app.accessibleCustomFeeds[$0].id })
-        app.customFeeds.removeAll { ids.contains($0.id) }
+        let ids = Set(offsets.map { library.accessibleCustomFeeds[$0].id })
+        library.customFeeds.removeAll { ids.contains($0.id) }
     }
 
     var body: some View {
-        @Bindable var app = app
+        @Bindable var library = library
         List {
             Section {
-                Picker("Standard-Feed", selection: $app.defaultSource) {
+                Picker("Standard-Feed", selection: $library.defaultSource) {
                     ForEach(sources, id: \.self) { source in
-                        Text(app.title(for: source)).tag(source)
+                        Text(library.title(for: source)).tag(source)
                     }
                 }
                 .pickerStyle(.inline)
@@ -41,7 +41,7 @@ struct FeedSettingsView: View {
             }
 
             Section {
-                ForEach(app.accessibleCustomFeeds) { feed in
+                ForEach(library.accessibleCustomFeeds) { feed in
                     Button { editedFeed = feed } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 6) {
@@ -61,7 +61,7 @@ struct FeedSettingsView: View {
                 .onDelete(perform: delete)
 
                 Button("Feed hinzufügen", systemImage: "plus") { addsFeed = true }
-                if app.hasProtectedFeeds {
+                if library.hasProtectedFeeds {
                     ProtectedFeedsButton()
                 }
             } header: {
@@ -73,7 +73,7 @@ struct FeedSettingsView: View {
         .pr0FormBackground()
         .inlineNavigationTitle("Feeds")
         .toolbar {
-            if !app.accessibleCustomFeeds.isEmpty {
+            if !library.accessibleCustomFeeds.isEmpty {
                 EditButton()
             }
         }
@@ -84,7 +84,7 @@ struct FeedSettingsView: View {
 
 /// Sheet to create or edit a saved tag feed.
 struct CustomFeedEditor: View {
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @Environment(\.dismiss) private var dismiss
     @State private var feed: CustomFeed
     let isNew: Bool
@@ -149,7 +149,7 @@ struct CustomFeedEditor: View {
                 if !isNew {
                     Section {
                         Button("Feed löschen", role: .destructive) {
-                            app.customFeeds.removeAll { $0.id == feed.id }
+                            library.customFeeds.removeAll { $0.id == feed.id }
                             dismiss()
                         }
                     }
@@ -166,7 +166,7 @@ struct CustomFeedEditor: View {
                         .disabled(tagsAreEmpty)
                 }
             }
-            .onAppear { makesDefault = app.defaultSource == .custom(feed.id) }
+            .onAppear { makesDefault = library.defaultSource == .custom(feed.id) }
         }
         .presentationDetents([.medium, .large])
     }
@@ -175,15 +175,15 @@ struct CustomFeedEditor: View {
         feed.tags = feed.tags.trimmingCharacters(in: .whitespaces)
         feed.name = feed.name.trimmingCharacters(in: .whitespaces)
         if feed.name.isEmpty { feed.name = CustomFeed(query: FeedQuery(tags: feed.tags)).name }
-        if let index = app.customFeeds.firstIndex(where: { $0.id == feed.id }) {
-            app.customFeeds[index] = feed
+        if let index = library.customFeeds.firstIndex(where: { $0.id == feed.id }) {
+            library.customFeeds[index] = feed
         } else {
-            app.customFeeds.append(feed)
+            library.customFeeds.append(feed)
         }
         if makesDefault {
-            app.defaultSource = .custom(feed.id)
-        } else if app.defaultSource == .custom(feed.id) {
-            app.defaultSource = .stream(feed.stream)
+            library.defaultSource = .custom(feed.id)
+        } else if library.defaultSource == .custom(feed.id) {
+            library.defaultSource = .stream(feed.stream)
         }
         dismiss()
     }

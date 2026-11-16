@@ -4,6 +4,7 @@ import SwiftUI
 /// then results once a search has been submitted.
 struct SearchScreen: View {
     @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @State private var results: FeedModel?
     @AppStorage("recentSearches") private var recentStorage = ""
 
@@ -25,6 +26,7 @@ struct SearchScreen: View {
             }
         }
         .searchable(text: $app.search.text, prompt: "Tags, z. B. kadse")
+        .onChange(of: library.defaultStream, initial: true) { app.search.stream = library.defaultStream }
         .onSubmit(of: .search, submit)
         .onChange(of: app.search.text) {
             if app.search.text.isEmpty { results = nil }

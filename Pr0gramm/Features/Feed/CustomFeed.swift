@@ -9,7 +9,7 @@ struct CustomFeed: Codable, Hashable, Identifiable {
     var stream: FeedStream = .top
     /// Content filters the feed is bound to; empty means always shown.
     var flags: ContentFlags = []
-    /// Hidden everywhere until unlocked with Face ID, see `AppState.unlockProtectedFeeds()`.
+    /// Hidden everywhere until unlocked with Face ID, see `FeedLibrary.unlockProtectedFeeds()`.
     var isProtected = false
 
     /// Shown only while every active filter is one of its own, e.g. an NSFW-bound feed while NSFW

@@ -4,7 +4,7 @@ import SwiftUI
 /// beliebt, neu, müll and the user's own feeds, like Instagram's "Für dich" and "Freunde".
 struct ReelsScreen: View {
     @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @State private var filter = ReelsFilter.load()
     /// `nil` until the user picks a feed, so Reels follows changes to the default feed.
     @State private var selection: FeedSource?
@@ -13,12 +13,11 @@ struct ReelsScreen: View {
     @State private var showsFilter = false
 
     private var sources: [FeedSource] {
-        app.feedSources(for: session.flags, includesSubscriptions: false)
+        library.sources(withSubscriptions: false)
     }
 
     private var current: FeedSource {
-        let source = selection ?? app.defaultSource(for: session.flags)
-        return sources.contains(source) ? source : .stream(.top)
+        library.currentSource(picked: selection, in: sources)
     }
 
     var body: some View {
@@ -29,7 +28,7 @@ struct ReelsScreen: View {
                 ScrollView(.horizontal) {
                     HStack(spacing: 0) {
                         ForEach(sources, id: \.self) { source in
-                            ReelsFeed(query: filter.query(for: app.query(for: source) ?? .top),
+                            ReelsFeed(query: filter.query(for: library.query(for: source)),
                                       isSelected: source == current, pool: pool, insets: insets,
                                       onFilter: { tag, include in
                                           if include { filter.include(tag) } else { filter.exclude(tag) }
@@ -88,7 +87,7 @@ struct ReelsScreen: View {
                                 Button {
                                     withAnimation(.snappy(duration: 0.25)) { selection = source }
                                 } label: {
-                                    Text(app.title(for: source))
+                                    Text(library.title(for: source))
                                         .font(.system(size: 22, weight: .bold))
                                         .foregroundStyle(.white.opacity(isOn ? 1 : 0.5))
                                         .lineLimit(1)
@@ -324,7 +323,7 @@ private struct ReelPage: View {
             if let tags = info?.tags.sorted(by: { $0.confidence > $1.confidence }).prefix(4), !tags.isEmpty {
                 FlowLayout(spacing: 10) {
                     ForEach(Array(tags)) { tag in
-                        NavigationLink(value: Route.feed(FeedQuery(stream: app.defaultStream, tags: tag.tag))) {
+                        NavigationLink(value: Route.tag(tag.tag)) {
                             Text("#\(tag.tag)").font(.subheadline.weight(.semibold)).lineLimit(1)
                         }
                         .buttonStyle(.plain)

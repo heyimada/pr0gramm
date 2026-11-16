@@ -2,6 +2,7 @@ import SwiftUI
 
 enum Route: Hashable {
     case feed(FeedQuery)
+    case tag(String)
     case user(String)
     case item(Int)
     case pager(PagerRoute)
@@ -75,12 +76,15 @@ struct RoutedStack<Root: View>: View {
 }
 
 struct RouteDestination: View {
+    @Environment(FeedLibrary.self) private var library
     let route: Route
 
     var body: some View {
         switch route {
         case .feed(let query):
             FeedScreen(query: query)
+        case .tag(let tag):
+            FeedScreen(query: FeedQuery(stream: library.defaultStream, tags: tag))
         case .user(let name):
             ProfileScreen(name: name)
         case .item(let id):

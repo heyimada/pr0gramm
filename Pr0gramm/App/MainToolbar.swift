@@ -26,6 +26,7 @@ struct MainToolbar: ToolbarContent {
 struct FilterMenu: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     /// A bare white icon for overlays like the Reels header, instead of the toolbar circle.
     var plain = false
 
@@ -40,7 +41,7 @@ struct FilterMenu: View {
                     Button("Anmelden", systemImage: "person.crop.circle") { app.showsLogin = true }
                 }
             }
-            if app.hasProtectedFeeds {
+            if library.hasProtectedFeeds {
                 Section {
                     ProtectedFeedsButton()
                 }
@@ -65,14 +66,14 @@ struct FilterMenu: View {
 
 /// Locks or unlocks protected feeds, whichever applies right now.
 struct ProtectedFeedsButton: View {
-    @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
 
     var body: some View {
-        if app.protectedFeedsUnlocked {
-            Button("Geschützte Feeds sperren", systemImage: "lock") { app.lockProtectedFeeds() }
+        if library.protectedFeedsUnlocked {
+            Button("Geschützte Feeds sperren", systemImage: "lock") { library.lockProtectedFeeds() }
         } else {
             Button("Geschützte Feeds entsperren", systemImage: "lock.open") {
-                Task { await app.unlockProtectedFeeds() }
+                Task { await library.unlockProtectedFeeds() }
             }
         }
     }

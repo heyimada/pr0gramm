@@ -3,11 +3,15 @@ import SwiftUI
 
 @main
 struct Pr0grammApp: App {
-    @State private var session = Session()
+    @State private var session: Session
+    @State private var library: FeedLibrary
     @State private var app = AppState()
     @State private var downloads = DownloadStore()
 
     init() {
+        let session = Session()
+        _session = State(initialValue: session)
+        _library = State(initialValue: FeedLibrary(session: session))
         // Thumbnails and images are loaded through URLSession.shared (AsyncImage); give it room to cache.
         URLCache.shared = URLCache(memoryCapacity: 64 << 20, diskCapacity: 512 << 20)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
@@ -18,6 +22,7 @@ struct Pr0grammApp: App {
             RootView()
                 .environment(session)
                 .environment(app)
+                .environment(library)
                 .environment(downloads)
                 .tint(.pr0Orange)
                 .preferredColorScheme(.dark)
@@ -33,6 +38,7 @@ struct Pr0grammApp: App {
                 MediaWindow(item: item)
                     .environment(session)
                     .environment(app)
+                    .environment(library)
                     .environment(downloads)
             }
         }
@@ -46,6 +52,7 @@ struct Pr0grammApp: App {
 struct RootView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    @Environment(FeedLibrary.self) private var library
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -78,7 +85,7 @@ struct RootView: View {
         .task { await session.sync() }
         .onChange(of: scenePhase) {
             // Protected feeds need Face ID again after leaving the app.
-            if scenePhase == .background { app.lockProtectedFeeds() }
+            if scenePhase == .background { library.lockProtectedFeeds() }
         }
     }
 }
