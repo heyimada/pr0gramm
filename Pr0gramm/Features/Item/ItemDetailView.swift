@@ -48,7 +48,7 @@ struct ItemDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         media(maxHeight: max(pageSize.height * 0.75, 200), insets: sideInsets)
-                        column.padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
+                        PostDetails(item: item, details: details).padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
                     }
                 }
             }
@@ -74,7 +74,7 @@ struct ItemDetailView: View {
 
     private var detailsColumn: some View {
         ScrollView {
-            column
+            PostDetails(item: item, details: details)
                 .padding(.top, 8)
                 .padding(.trailing, sideInsets.trailing)
         }
@@ -96,32 +96,6 @@ struct ItemDetailView: View {
             }
         }
     }
-
-    private var column: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ItemInfoBar(item: item)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 20)
-
-            content.padding(.horizontal, 16)
-        }
-        .padding(.bottom, 40)
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        if let info = details.info {
-            TagsSection(tags: info.tags)
-            CommentsSection(item: item, details: details)
-                .padding(.top, 28)
-        } else if let error = details.error {
-            ErrorView(error: error, retry: details.load)
-        } else {
-            ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
-        }
-    }
-
 }
 
 private struct SourceBar: View {
