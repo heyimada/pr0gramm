@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ItemDetailView: View {
+    @Environment(\.bookPages) private var bookPages
     @Environment(\.horizontalSizeClass) private var sizeClass
     let item: FeedItem
     let isActive: Bool
@@ -33,30 +34,21 @@ struct ItemDetailView: View {
         // One container rather than a Group, so the modifiers below, the comment composer
         // among them, belong to the page and survive switching between the two layouts.
         ZStack {
-            if isSideBySide {
+            if bookPages != nil, #available(iOS 27.1, visionOS 27.1, *) {
+                // Book Mode: the media on one page, the post's details on the other.
+                ArrangementView { mediaColumn } secondary: { detailsColumn }
+                    .arrangementViewStyle(.split)
+            } else if isSideBySide {
                 HStack(spacing: 0) {
-                    GeometryReader { proxy in
-                        ScrollView {
-                            media(maxHeight: max(proxy.size.height - (item.sourceURL == nil ? 0 : SourceBar.height), 0))
-                                .frame(width: proxy.size.width)
-                        }
-                        .defaultScrollAnchor(.center, for: .alignment)
-                    }
-                    .padding(.leading, sideInsets.leading)
-                    .background(Color.black)
-
-                    ScrollView {
-                        column
-                            .padding(.top, 8)
-                            .padding(.trailing, sideInsets.trailing)
-                    }
-                    .frame(width: min(max(pageSize.width * 0.38, 340), 440) + sideInsets.trailing)
+                    mediaColumn
+                    detailsColumn
+                        .frame(width: min(max(pageSize.width * 0.38, 340), 440) + sideInsets.trailing)
                 }
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         media(maxHeight: max(pageSize.height * 0.75, 200), insets: sideInsets)
-                        column.padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
+                        PostDetails(item: item, details: details).padding(.leading, sideInsets.leading).padding(.trailing, sideInsets.trailing)
                     }
                 }
             }
@@ -65,6 +57,27 @@ struct ItemDetailView: View {
         .onDisappear { playback.stop() }
         .task { await details.load() }
         .commentComposer(item: item, details: details)
+    }
+
+    /// Sized by the space left rather than by the media, so the page can't outgrow the screen.
+    private var mediaColumn: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                media(maxHeight: max(proxy.size.height - (item.sourceURL == nil ? 0 : SourceBar.height), 0))
+                    .frame(width: proxy.size.width)
+            }
+            .defaultScrollAnchor(.center, for: .alignment)
+        }
+        .padding(.leading, sideInsets.leading)
+        .background(Color.black)
+    }
+
+    private var detailsColumn: some View {
+        ScrollView {
+            PostDetails(item: item, details: details)
+                .padding(.top, 8)
+                .padding(.trailing, sideInsets.trailing)
+        }
     }
 
     private func media(maxHeight: CGFloat, insets: EdgeInsets = EdgeInsets()) -> some View {
@@ -83,32 +96,6 @@ struct ItemDetailView: View {
             }
         }
     }
-
-    private var column: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ItemInfoBar(item: item)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 20)
-
-            content.padding(.horizontal, 16)
-        }
-        .padding(.bottom, 40)
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        if let info = details.info {
-            TagsSection(tags: info.tags)
-            CommentsSection(item: item, details: details)
-                .padding(.top, 28)
-        } else if let error = details.error {
-            ErrorView(error: error, retry: details.load)
-        } else {
-            ProgressView().frame(maxWidth: .infinity).padding(.top, 24)
-        }
-    }
-
 }
 
 private struct SourceBar: View {

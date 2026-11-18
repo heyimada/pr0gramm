@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ReelsScreen: View {
+    @Environment(\.bookPages) private var bookPages
     @Environment(FeedLibrary.self) private var library
     @Environment(PlaybackSettings.self) private var playback
     @State private var store = ReelsFilterStore()
@@ -18,7 +19,7 @@ struct ReelsScreen: View {
         library.currentSource(picked: selection, in: sources)
     }
 
-    var body: some View {
+    private var reels: some View {
         ZStack(alignment: .top) {
             FeedPager(sources: sources, current: current, onSwipe: { selection = $0 }) { source in
                 let query = store.filter.query(for: library.query(for: source))
@@ -34,6 +35,21 @@ struct ReelsScreen: View {
             controls
         }
         .background(Color.black)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if bookPages != nil, #available(iOS 27.1, visionOS 27.1, *) {
+            // Book Mode: the reels on one page, the reel on show's details on the other.
+            ArrangementView { reels } secondary: { ReelDetailsPane(item: pool.activeItem) }
+                .arrangementViewStyle(.split)
+        } else {
+            reels
+        }
+    }
+
+    var body: some View {
+        content
         #if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
         #endif
@@ -139,6 +155,42 @@ struct ReelsScreen: View {
     }
 }
 
+/// The details of the reel on show, beside the reels in Book Mode.
+private struct ReelDetailsPane: View {
+    let item: FeedItem?
+
+    var body: some View {
+        Group {
+            if let item {
+                ReelPostDetails(item: item).id(item.id)
+            } else {
+                Color.pr0Background
+            }
+        }
+    }
+}
+
+private struct ReelPostDetails: View {
+    let item: FeedItem
+    @State private var details: ItemDetails
+
+    init(item: FeedItem) {
+        self.item = item
+        _details = State(initialValue: ItemDetails(itemID: item.id))
+    }
+
+    var body: some View {
+        ScrollView {
+            PostDetails(item: item, details: details)
+        }
+        .scrollIndicators(.hidden)
+        .background(Color.pr0Background)
+        .task { await details.load() }
+        .commentComposer(item: item, details: details)
+        .appPresentations()
+    }
+}
+
 /// One feed's vertical reels. Only the selected feed drives the shared player pool.
 private struct ReelsFeed: View {
     @Environment(Session.self) private var session
@@ -196,6 +248,7 @@ private struct ReelsFeed: View {
 }
 
 private struct ReelPage: View {
+    @Environment(\.bookPages) private var bookPages
     @Environment(Session.self) private var session
     @Environment(PlaybackSettings.self) private var playback
     @Environment(AppState.self) private var app
@@ -220,22 +273,28 @@ private struct ReelPage: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             media
-            LinearGradient(stops: [.init(color: .clear, location: 0.55), .init(color: .black.opacity(0.75), location: 1)],
-                           startPoint: .top, endPoint: .bottom)
-                .allowsHitTesting(false)
-            HStack(alignment: .bottom, spacing: 12) {
-                caption
-                Spacer(minLength: 0)
-                actions
+            if bookPages == nil {
+                LinearGradient(stops: [.init(color: .clear, location: 0.55), .init(color: .black.opacity(0.75), location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+                    .allowsHitTesting(false)
+                HStack(alignment: .bottom, spacing: 12) {
+                    caption
+                    Spacer(minLength: 0)
+                    actions
+                }
+                // Each side on its own: the closed iPhone Duo keeps its tab bar along the right edge.
+                .padding(.leading, insets.leading + 16)
+                .padding(.trailing, insets.trailing + 16)
+                .padding(.bottom, insets.bottom + 12)
             }
-            // Each side on its own: the closed iPhone Duo keeps its tab bar along the right edge.
-            .padding(.leading, insets.leading + 16)
-            .padding(.trailing, insets.trailing + 16)
-            .padding(.bottom, insets.bottom + 12)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if bookPages != nil, item.isVideo { speakerToggle }
         }
         .clipped()
-        .task(id: isActive) {
-            guard isActive else { return }
+        // In Book Mode the page beside the reels fetches the details.
+        .task(id: isActive && bookPages == nil) {
+            guard isActive, bookPages == nil else { return }
             await details.loadIfNeeded()
         }
         .sheet(isPresented: $showsComments) {
@@ -282,6 +341,21 @@ private struct ReelPage: View {
         .animation(.interactiveSpring, value: pinch)
         .accessibilityLabel(item.isVideo ? "Video von \(item.user)" : "Bild von \(item.user)")
         .accessibilityAction(named: playback.reelsShowWhole ? "Bildschirm füllen" : "Ganz anzeigen") { playback.reelsShowWhole.toggle() }
+    }
+
+    private var speakerToggle: some View {
+        Button { pool.isMuted.toggle() } label: {
+            Image(systemName: pool.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: .circle)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .padding(.trailing, 16)
+        .padding(.bottom, insets.bottom + 12)
+        .accessibilityLabel(pool.isMuted ? "Stumm" : "Ton")
     }
 
     private var caption: some View {

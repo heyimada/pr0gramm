@@ -89,6 +89,7 @@ struct RootView: View {
         }
         .sheet(isPresented: $app.showsSettings) { SettingsView() }
         .appPresentations()
+        .readsBookPages()
         .task { await session.sync() }
         .onChange(of: scenePhase) {
             // Protected feeds need Face ID again after leaving the app.
