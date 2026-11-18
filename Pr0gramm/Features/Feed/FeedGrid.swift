@@ -5,8 +5,7 @@ struct FeedGrid<Header: View>: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.bookPages) private var bookPages
     @Namespace private var namespace
-    @State private var gridFrame = CGRect.zero
-    @State private var contentMinX: CGFloat = 0
+    @State private var contentFrame = CGRect.zero
     let model: FeedModel
     var showsBackground = true
     var onScroll: ((CGFloat) -> Void)?
@@ -30,7 +29,6 @@ struct FeedGrid<Header: View>: View {
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
             onScroll?(offset)
         }
-        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { gridFrame = $0 }
         .refreshable { await model.reload(flags: session.flags) }
         .task(id: session.flags) { await model.loadIfNeeded(flags: session.flags) }
         .background(showsBackground ? Color.pr0Background : .clear)
@@ -40,15 +38,17 @@ struct FeedGrid<Header: View>: View {
 extension FeedGrid {
     @ViewBuilder
     private var grid: some View {
-        if let pages = bookPages, let layout = BookGridLayout(pages: pages, gridFrame: gridFrame) {
-            thumbnails(columns: layout.columns)
-                .frame(width: layout.width)
-                .padding(.leading, max(layout.minX - contentMinX, 0))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .global).minX }) { contentMinX = $0 }
-        } else {
-            thumbnails(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact))
+        Group {
+            if let pages = bookPages, let layout = BookGridLayout(pages: pages, content: contentFrame) {
+                thumbnails(columns: layout.columns)
+                    .frame(width: layout.width)
+                    .padding(.leading, max(layout.minX - contentFrame.minX, 0))
+            } else {
+                thumbnails(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact))
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { contentFrame = $0 }
     }
 
     private func thumbnails(columns: [GridItem]) -> some View {
@@ -81,8 +81,9 @@ private struct BookGridLayout {
     /// Global x of the grid's leading edge.
     let minX: CGFloat
 
-    init?(pages: BookPages, gridFrame: CGRect) {
-        let pageWidth = min(pages.leading.width, gridFrame.maxX - pages.trailing.minX)
+    /// `content` is the grid's area inside the screen's content margins (e.g. the side tab bar).
+    init?(pages: BookPages, content: CGRect) {
+        let pageWidth = min(pages.leading.maxX - content.minX, content.maxX - pages.trailing.minX)
         guard pageWidth > 0 else { return nil }
         let spacing = ThumbnailView.spacing
         let count = max(2, Int(pageWidth / 150))

@@ -57,7 +57,7 @@ struct HomeScreen: View {
                             heroCard.id(hero.id).frame(width: pages.leading.width)
                             if top.count > 1 {
                                 TopList(items: Array(top.dropFirst()), isToday: isToday, model: topModel)
-                                    .frame(width: pages.trailing.width)
+                                    .frame(maxWidth: .infinity)
                             }
                         }
                     } else {
