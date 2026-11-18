@@ -70,6 +70,12 @@ scripts/testflight.sh ios          # only one platform
 ```
 
 Each run uses a new build number (`yyyymmdd.HHMM`), so you don't have to bump anything by hand.
+
+The upload needs an Apple Distribution certificate in your keychain (Xcode › Settings › Accounts ›
+Manage Certificates › + › Apple Distribution). Without one, Xcode signs with a cloud-managed
+certificate, and when the certificate's name contains a non-ASCII letter (an "é", say) it writes
+that name into the code signature in a different Unicode form. App Store Connect then rejects the
+upload as "Invalid Signature".
 Bump `MARKETING_VERSION` in `project.yml` for a new version.
 
 For iPhone and iPad users in the EU, Japan and Brazil, the app can also be distributed through
