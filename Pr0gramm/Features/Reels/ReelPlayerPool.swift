@@ -5,6 +5,7 @@ import Observation
 final class ReelPlayerPool {
     private(set) var players: [Int: LoopingPlayer] = [:]
     private var activeID: Int?
+    private(set) var activeItem: FeedItem?
 
     var isMuted = true {
         didSet { players.values.forEach { $0.player.isMuted = isMuted } }
@@ -12,6 +13,7 @@ final class ReelPlayerPool {
 
     func focus(on id: Int?, in items: [FeedItem]) {
         activeID = id
+        activeItem = id.flatMap { id in items.first { $0.id == id } }
         guard let id, let index = items.firstIndex(where: { $0.id == id }) else { return pauseAll() }
         let keep = [index, index + 1].filter(items.indices.contains).map { items[$0] }.filter(\.isVideo)
         let keepIDs = Set(keep.map(\.id))
