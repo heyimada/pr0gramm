@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HomeScreen: View {
+    @Environment(\.bookPages) private var bookPages
     @Environment(FeedLibrary.self) private var library
     @State private var cache = FeedCache()
     @State private var selection: FeedSource?
@@ -47,11 +48,23 @@ struct HomeScreen: View {
                                title: library.title(for:))
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 16)
+                    .centeredOnLeadingPage()
                 if let hero = top.first {
-                    HeroCard(item: hero, isToday: isToday, route: .pager(PagerRoute(model: topModel, itemID: hero.id, transitionNamespace: nil)))
-                        .id(hero.id)
-                    if top.count > 1 {
-                        TopRail(items: Array(top.dropFirst()), isToday: isToday, model: topModel)
+                    let heroCard = HeroCard(item: hero, isToday: isToday, route: .pager(PagerRoute(model: topModel, itemID: hero.id, transitionNamespace: nil)))
+                    if let pages = bookPages {
+                        // The hero fills the leading page, the ranking runs down the trailing one.
+                        HStack(alignment: .top, spacing: pages.gap) {
+                            heroCard.id(hero.id).frame(width: pages.leading.width)
+                            if top.count > 1 {
+                                TopList(items: Array(top.dropFirst()), isToday: isToday, model: topModel)
+                                    .frame(width: pages.trailing.width)
+                            }
+                        }
+                    } else {
+                        heroCard.id(hero.id)
+                        if top.count > 1 {
+                            TopRail(items: Array(top.dropFirst()), isToday: isToday, model: topModel)
+                        }
                     }
                     SectionTitle(kicker: sectionKicker, title: sectionTitle)
                 }
@@ -101,6 +114,7 @@ private struct AmbientBackdrop: View {
 }
 
 private struct HeroCard: View {
+    @Environment(\.bookPages) private var bookPages
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(PlaybackSettings.self) private var playback
     @Environment(Session.self) private var session
@@ -131,8 +145,8 @@ private struct HeroCard: View {
                 caption.padding(20)
             }
             // Portrait on phones; wide on regular-width screens like the opened iPhone Duo, so the
-            // rail below still shows.
-            .aspectRatio(sizeClass == .regular ? 2 : 4 / 5, contentMode: .fit)
+            // rail below still shows. Portrait again on a single page of Book Mode.
+            .aspectRatio(sizeClass == .regular && bookPages == nil ? 2 : 4 / 5, contentMode: .fit)
             .clipShape(.rect(cornerRadius: 28))
             .overlay(RoundedRectangle(cornerRadius: 28).strokeBorder(.white.opacity(0.08)))
             .contentShape(.rect(cornerRadius: 28))
@@ -239,6 +253,44 @@ private struct TopRail: View {
             }
             .scrollTargetBehavior(.viewAligned)
             .scrollIndicators(.hidden)
+        }
+    }
+}
+
+private struct TopList: View {
+    @Environment(Session.self) private var session
+    let items: [FeedItem]
+    let isToday: Bool
+    let model: FeedModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionTitle(kicker: "Trending", title: isToday ? "Top 10 heute" : "Top 10")
+            VStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    NavigationLink(value: Route.pager(PagerRoute(model: model, itemID: item.id, transitionNamespace: nil))) {
+                        HStack(spacing: 12) {
+                            Text("\(index + 2)")
+                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .foregroundStyle(Color.pr0Orange)
+                                .frame(width: 40, alignment: .trailing)
+                            ThumbnailView(item: item)
+                                .frame(width: 64, height: 64)
+                                .clipShape(.rect(cornerRadius: 12))
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(item.user).font(.subheadline.weight(.semibold)).lineLimit(1)
+                                Text("\(session.score(of: item).formatted()) Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 6)
+                        .foregroundStyle(Color.pr0Text)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(CardPressStyle())
+                }
+            }
+            .padding(.horizontal, 16)
         }
     }
 }

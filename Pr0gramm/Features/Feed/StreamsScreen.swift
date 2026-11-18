@@ -37,6 +37,7 @@ struct StreamsScreen: View {
             CollapsingSegmentCapsule(options: sources, selection: Binding(get: { current }, set: { selection = $0 }),
                                      title: library.title(for:), isCollapsed: collapse.isCollapsed, collapsedHint: "Feeds anzeigen", onExpand: collapse.expand)
                 .padding(.horizontal, 16)
+                .centeredOnLeadingPage()
                 .padding(.top, 8)
                 .padding(.bottom, 8)
                 .onGeometryChange(for: CGFloat.self, of: \.size.height) { height in
