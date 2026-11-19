@@ -1,5 +1,6 @@
-ok    start opens
-ok    feed tab
+ok    opens on the feed
+ok    downloads and profil tabs
+ok    no start tab
 ok    post opens
 ok    reels
 ok    reels comment sheet
@@ -9,11 +10,11 @@ ok    settings
 ok    settings feeds
 ok    settings navigation
 ok    login sheet
-ok    fold keeps reel 3 (Profil von Gaywittertierchen)
+FAIL  fold keeps reel 3 (Profil von schlafl0s / Profil von schlafl0s / Profil von Jalapenis)
 ok    fold keeps the third feed ("müll" [selected])
-ok    fold keeps a post past the first ([navigation-bar] "Clusterfuck")
+ok    fold keeps a post past the first ([navigation-bar] "ZarGhalak")
 ok    search results
 ok    feed editor
 ok    saved search shows as saved
 ok    removed again
-0 failed
+1 failed

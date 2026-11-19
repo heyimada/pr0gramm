@@ -2,9 +2,9 @@ import Observation
 import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
-    case top, new, junk, subscribed, home, feed, reels, profile, downloads, search
+    case top, new, junk, subscribed, feed, reels, profile, downloads, search
 
-    static let defaultOrder: [AppTab] = [.home, .feed, .reels, .search]
+    static let defaultOrder: [AppTab] = [.feed, .reels, .downloads, .profile, .search]
     /// More than this on an iPhone and UIKit folds the rest into a "More" tab.
     static let compactLimit = 5
 
@@ -16,7 +16,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .new: FeedStream.new.title.capitalized
         case .junk: FeedStream.junk.title.capitalized
         case .subscribed: FeedStream.subscribed.title.capitalized
-        case .home: "Start"
         case .feed: "Feed"
         case .reels: "Reels"
         case .profile: "Profil"
@@ -31,7 +30,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .new: "clock.fill"
         case .junk: "trash.fill"
         case .subscribed: "photo.on.rectangle.angled"
-        case .home: "house.fill"
         case .feed: "square.grid.3x3.fill"
         case .reels: "play.rectangle.on.rectangle.fill"
         case .profile: "person.crop.circle.fill"
@@ -46,7 +44,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .new: "Alle neuen Posts"
         case .junk: "Posts, die es nicht nach beliebt geschafft haben"
         case .subscribed: "Posts von Leuten, denen du folgst (nur angemeldet)"
-        case .home: "Nr. 1 heute, Top 10 und beliebt"
         case .feed: "Alle Streams mit Umschalter"
         case .reels: "Vollbild-Feed zum Durchwischen"
         case .profile: "Dein Profil"

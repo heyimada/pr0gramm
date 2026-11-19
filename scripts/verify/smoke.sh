@@ -20,6 +20,10 @@ check() {
     local name=$1 pattern=$2
     if running && shows "$pattern"; then print "ok    $name"; else print "FAIL  $name"; failures=$((failures + 1)); fi
 }
+check_absent() {
+    local name=$1 pattern=$2
+    if running && ! shows "$pattern"; then print "ok    $name"; else print "FAIL  $name"; failures=$((failures + 1)); fi
+}
 tap() { $ad press "$1" > /dev/null 2>&1; sleep ${2:-2}; }
 ref() { $ad snapshot -i 2>&1 | grep -m1 -E "$1" | grep -oE '@e[0-9]+(~s[0-9]+)?'; }
 # The first label matching $1 whose element sits on screen. Lazy stacks keep neighbouring pages
@@ -43,11 +47,10 @@ first() {
 
 $ad fold open > /dev/null 2>&1
 $ad open de.azula.pr0gramm --relaunch > /dev/null 2>&1
-sleep 6
-check "start opens" '"Top 10 heute"|"Top 10"'
-
-tap 'role=button label="Feed"' 6
-check "feed tab" 'Post [0-9]+ von'
+sleep 10
+check "opens on the feed" 'Post [0-9]+ von'
+check "downloads and profil tabs" 'button "Downloads"|"Downloads"'
+check_absent "no start tab" 'role=button label="Start"|\[button\] "Start"'
 tap "$(ref '\[button\] "Post [0-9]+ von')" 5
 check "post opens" '"Teilen"'
 $ad back > /dev/null 2>&1; sleep 2
@@ -65,7 +68,7 @@ tap 'role=button label="Reels-Filter"' 3
 check "reels filter sheet" '"Nur Videos"'
 tap 'role=button label="Fertig"' 2
 
-tap 'role=button label="Start"' 2
+tap 'role=button label="Feed"' 2
 tap "$(ref '\[(popupbutton|button)\] "Konto"')" 1
 tap 'role=button label="Einstellungen"' 3
 check "settings" '"Feeds'
