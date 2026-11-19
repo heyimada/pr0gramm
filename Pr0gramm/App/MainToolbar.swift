@@ -23,12 +23,43 @@ struct MainToolbar: ToolbarContent {
     }
 }
 
+/// Opens the Profil tab when it is in the tab bar, which carries login, settings and logout.
+/// Otherwise a menu with those.
 struct AccountItem: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @State private var confirmsLogout = false
 
     var body: some View {
+        // A menu in both cases: on the iPhone Duo a plain button beside the filter menu pushes the
+        // pair out of the navigation bar.
+        if app.visibleTabs(isLoggedIn: session.isLoggedIn).contains(.profile) {
+            Menu {
+                Button("Einstellungen", systemImage: "gearshape") { app.tab = .profile }
+            } label: {
+                label
+            } primaryAction: {
+                app.tab = .profile
+            }
+        } else {
+            menu
+        }
+    }
+
+    @ViewBuilder
+    private var label: some View {
+        if let name = session.userName {
+            Avatar(name: name, size: 34)
+                .overlay(Circle().strokeBorder(Color.pr0Orange, lineWidth: 1.5))
+                .accessibilityLabel("Profil von \(name)")
+        } else {
+            BarCircle { Image(systemName: "person") }
+                .accessibilityLabel("Konto")
+        }
+    }
+
+    @ViewBuilder
+    private var menu: some View {
         if let name = session.userName {
             Menu {
                 Section {
@@ -43,9 +74,7 @@ struct AccountItem: View {
                     confirmsLogout = true
                 }
             } label: {
-                Avatar(name: name, size: 34)
-                    .overlay(Circle().strokeBorder(Color.pr0Orange, lineWidth: 1.5))
-                    .accessibilityLabel(name)
+                label
             }
             .confirmationDialog("Wirklich abmelden?", isPresented: $confirmsLogout, titleVisibility: .visible) {
                 Button("Abmelden", role: .destructive) { Task { await session.logout() } }
@@ -55,8 +84,7 @@ struct AccountItem: View {
                 Button("Anmelden", systemImage: "person.crop.circle") { app.showsLogin = true }
                 Button("Einstellungen", systemImage: "gearshape") { app.showsSettings = true }
             } label: {
-                BarCircle { Image(systemName: "person") }
-                    .accessibilityLabel("Konto")
+                label
             }
         }
     }

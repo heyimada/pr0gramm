@@ -69,17 +69,18 @@ check "reels filter sheet" '"Nur Videos"'
 tap 'role=button label="Fertig"' 2
 
 tap 'role=button label="Feed"' 2
-tap "$(ref '\[(popupbutton|button)\] "Konto"')" 1
-tap 'role=button label="Einstellungen"' 3
-check "settings" '"Feeds'
+tap 'role=button label="Konto"' 3
+check "account button opens profil" '"Profil" \[selected\]'
+check "profil lists the settings" '"Einstellungen"'
 tap "$(ref '"Feeds, ')" 3
 check "settings feeds" '"Feed hinzufügen"'
 $ad back > /dev/null 2>&1; sleep 2
 tap "$(ref '"Navigation"')" 3
 check "settings navigation" '"In der Leiste"'
 $ad back > /dev/null 2>&1; sleep 2
-tap 'role=button label="Fertig"' 2
-tap "$(ref '\[(popupbutton|button)\] "Konto"')" 1
+tap "$(ref '"Einstellungen"')" 3
+check "settings" '\[navigation-bar\] "Einstellungen"'
+$ad back > /dev/null 2>&1; sleep 2
 tap 'role=button label="Anmelden"' 4
 check "login sheet" '"Captcha-Bild, tippen für ein neues"'
 tap 'role=button label="Abbrechen"' 2

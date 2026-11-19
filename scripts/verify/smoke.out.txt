@@ -6,15 +6,17 @@ ok    reels
 ok    reels comment sheet
 ok    tag opens inside the sheet
 ok    reels filter sheet
-ok    settings
+ok    account button opens profil
+ok    profil lists the settings
 ok    settings feeds
 ok    settings navigation
+ok    settings
 ok    login sheet
-FAIL  fold keeps reel 3 (Profil von Nikux3 / Profil von maxschmuser / Profil von maxschmuser)
+FAIL  fold keeps reel 3 (Profil von Schlachsahne / Profil von maxschmuser / Profil von maxschmuser)
 ok    feed menu lists the presets
 ok    zufall loads
 ok    fold keeps the third feed ("Feed: Müll")
-ok    fold keeps a post past the first ([navigation-bar] "maxschmuser")
+ok    fold keeps a post past the first ([navigation-bar] "SchloterMPM")
 ok    search results
 ok    feed editor
 ok    saved search shows as saved

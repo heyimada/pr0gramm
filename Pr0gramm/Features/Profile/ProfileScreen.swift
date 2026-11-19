@@ -1,14 +1,17 @@
 import SwiftUI
 
-struct ProfileScreen: View {
+struct ProfileScreen<Extras: View>: View {
     @Environment(Session.self) private var session
     let name: String
+    /// Shown between the header and the uploads, e.g. the settings on your own profile.
+    @ViewBuilder let extras: Extras
     @State private var uploads: FeedModel
     @State private var profile: Profile?
     @State private var error: Error?
 
-    init(name: String) {
+    init(name: String, @ViewBuilder extras: () -> Extras) {
         self.name = name
+        self.extras = extras()
         _uploads = State(initialValue: FeedModel(query: FeedQuery(stream: .new, user: name)))
     }
 
@@ -16,6 +19,7 @@ struct ProfileScreen: View {
         FeedGrid(model: uploads) {
             VStack(alignment: .leading, spacing: 18) {
                 ProfileHeader(name: name, profile: profile, error: error)
+                extras
                 Text("Hochlads").pr0SectionHeader()
             }
             .padding(16)
@@ -35,6 +39,12 @@ struct ProfileScreen: View {
     }
 }
 
+extension ProfileScreen where Extras == EmptyView {
+    init(name: String) {
+        self.init(name: name) { EmptyView() }
+    }
+}
+
 private struct ProfileHeader: View {
     let name: String
     let profile: Profile?
@@ -45,14 +55,14 @@ private struct ProfileHeader: View {
             HStack(spacing: 14) {
                 Avatar(name: name, size: 64)
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(name).font(.system(size: 24, weight: .semibold)).lineLimit(1)
-                        if let profile { MarkDot(mark: profile.user.mark, size: 10) }
-                    }
+                    Text(name).font(.title2.bold()).lineLimit(1)
                     if let profile {
-                        Text("\(profile.user.score.formatted()) Benis")
-                            .font(.system(size: 15))
-                            .foregroundStyle(Color.pr0Secondary)
+                        HStack(spacing: 6) {
+                            MarkDot(mark: profile.user.mark, size: 8)
+                            Text(UserMark.name(profile.user.mark))
+                        }
+                        .font(.subheadline)
+                        .foregroundStyle(Color.mark(profile.user.mark))
                         if profile.user.banned == 1 {
                             Text("gesperrt").font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.pr0Orange)
                         }
@@ -61,14 +71,21 @@ private struct ProfileHeader: View {
             }
 
             if let profile {
-                HStack(spacing: 28) {
+                HStack(alignment: .lastTextBaseline, spacing: 26) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(profile.user.score, format: .number)
+                            .font(.system(size: 44, weight: .bold))
+                            .monospacedDigit()
+                        Text("Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
+                    }
+                    .accessibilityElement(children: .combine)
                     if let count = profile.uploadCount { stat(count, "Hochlads") }
                     if let count = profile.commentCount { stat(count, "Kommentare") }
                     if let count = profile.tagCount { stat(count, "Tags") }
                 }
 
                 Text("Dabei seit \(profile.user.registeredAt.formatted(date: .long, time: .omitted))")
-                    .font(.system(size: 13))
+                    .font(.footnote)
                     .foregroundStyle(Color.pr0Secondary)
 
                 if let badges = profile.badges, !badges.isEmpty {
@@ -90,8 +107,8 @@ private struct ProfileHeader: View {
 
     private func stat(_ value: Int, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value, format: .number).font(.system(size: 17, weight: .semibold)).monospacedDigit()
-            Text(label).font(.system(size: 12)).foregroundStyle(Color.pr0Secondary)
+            Text(value, format: .number).font(.title3.weight(.semibold)).monospacedDigit()
+            Text(label).font(.caption).foregroundStyle(Color.pr0Secondary)
         }
     }
 }
