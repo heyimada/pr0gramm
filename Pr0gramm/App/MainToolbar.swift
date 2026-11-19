@@ -90,17 +90,12 @@ struct AccountItem: View {
     }
 }
 
+/// The pr0gramm logo, without the name beside it.
 struct Wordmark: View {
     var body: some View {
-        HStack(spacing: 8) {
-            Pr0Logo(size: 28)
-            Text("pr0gramm")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(Color.pr0Text)
-        }
-        .fixedSize()
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("pr0gramm")
+        Pr0Logo(size: 28)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("pr0gramm")
     }
 }
 

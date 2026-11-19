@@ -50,7 +50,7 @@ final class FeedLibrary {
 
     func title(for source: FeedSource) -> String {
         switch source {
-        case .stream(let stream): stream.title.capitalized
+        case .stream(let stream): stream.title
         case .preset(let preset): preset.title
         case .custom(let id): customFeed(id)?.name ?? ""
         }

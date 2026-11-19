@@ -12,12 +12,12 @@ ok    settings feeds
 ok    settings navigation
 ok    settings
 ok    login sheet
-FAIL  fold keeps reel 3 (Profil von gummitod / Profil von Heuler / Profil von Heuler)
+FAIL  fold keeps reel 3 (Profil von gummitod / Profil von Krasmorak / Profil von Krasmorak)
 ok    feed menu lists the presets
 ok    zufall loads
 ok    swipes back from zufall
 ok    zufall stays as the last page
-ok    fold keeps the third feed ("Feed: Müll")
+ok    fold keeps the third feed ("Feed: müll")
 ok    fold keeps a post past the first ([navigation-bar] "Glatzc0ck")
 ok    search results
 ok    feed editor

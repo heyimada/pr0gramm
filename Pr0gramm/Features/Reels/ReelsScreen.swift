@@ -77,24 +77,7 @@ struct ReelsScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 StreamMenu(sources: sources, selection: Binding(get: { current }, set: { pick($0) })) {
-                    HStack(spacing: 6) {
-                        Text(library.title(for: current))
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                        MenuChevron(size: 12)
-                    }
-                    .frame(maxWidth: 240, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 16)
-                    .padding(.trailing, 14)
-                    .frame(height: 40)
-                    #if os(visionOS)
-                    .glassBackgroundEffect(in: .capsule)
-                    #else
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                    #endif
-                    .contentShape(.capsule)
+                    StreamMenuLabel(title: library.title(for: current))
                 }
 
                 Spacer(minLength: 0)

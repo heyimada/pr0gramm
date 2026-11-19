@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileScreen<Extras: View>: View {
     @Environment(Session.self) private var session
     @Environment(\.bookPages) private var bookPages
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let name: String
     /// Shown between the header and the uploads, e.g. the settings on your own profile.
     @ViewBuilder let extras: Extras
@@ -17,34 +18,22 @@ struct ProfileScreen<Extras: View>: View {
     }
 
     var body: some View {
-        Group {
-            if bookPages != nil, #available(iOS 27.1, visionOS 27.1, *) {
-                // Book Mode: who it is on one page, what they uploaded on the other.
-                ArrangementView {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 18) {
-                            ProfileHeader(name: name, profile: profile, error: error)
-                            extras
-                        }
-                        .padding(16)
-                    }
-                    .background(Color.pr0Background)
-                } secondary: {
-                    FeedGrid(model: uploads) {
-                        Text("Hochlads").pr0SectionHeader().padding(16)
-                    }
-                }
-                .arrangementViewStyle(.split)
-            } else {
-                FeedGrid(model: uploads) {
-                    VStack(alignment: .leading, spacing: 18) {
+        FeedGrid(model: uploads) {
+            VStack(alignment: .leading, spacing: 18) {
+                if sizeClass == .regular {
+                    // Unfolded: the settings beside who you are, each on its own page in Book Mode.
+                    HStack(alignment: .top, spacing: (bookPages?.gap ?? 0) + 32) {
                         ProfileHeader(name: name, profile: profile, error: error)
-                        extras
-                        Text("Hochlads").pr0SectionHeader()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        extras.frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(16)
+                } else {
+                    ProfileHeader(name: name, profile: profile, error: error)
+                    extras
                 }
+                Text("Hochlads").pr0SectionHeader()
             }
+            .padding(16)
         }
         .navigationTitle(name)
         .task(id: session.flags) { await load() }

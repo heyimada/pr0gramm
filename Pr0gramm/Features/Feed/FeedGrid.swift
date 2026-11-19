@@ -8,7 +8,6 @@ struct FeedGrid<Header: View>: View {
     @State private var contentFrame = CGRect.zero
     let model: FeedModel
     var showsBackground = true
-    var onScroll: ((CGFloat) -> Void)?
     @ViewBuilder var header: Header
 
     var body: some View {
@@ -25,9 +24,6 @@ struct FeedGrid<Header: View>: View {
 
             // Inline rather than an overlay so a header (e.g. on profiles) stays visible.
             FeedStatus(model: model, emptySymbol: "magnifyingglass", topInset: 100)
-        }
-        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
-            onScroll?(offset)
         }
         .refreshable { await model.reload(flags: session.flags) }
         .task(id: session.flags) { await model.loadIfNeeded(flags: session.flags) }
@@ -137,8 +133,8 @@ struct FeedStatus: View {
 }
 
 extension FeedGrid where Header == EmptyView {
-    init(model: FeedModel, onScroll: ((CGFloat) -> Void)? = nil) {
-        self.init(model: model, onScroll: onScroll) { EmptyView() }
+    init(model: FeedModel) {
+        self.init(model: model) { EmptyView() }
     }
 }
 

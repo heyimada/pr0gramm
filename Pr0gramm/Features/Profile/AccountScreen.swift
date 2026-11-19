@@ -5,29 +5,43 @@ import SwiftUI
 struct AccountScreen: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.bookPages) private var bookPages
+
+    private var loginPrompt: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Nicht angemeldet").font(.title2.bold())
+            Text("Melde dich an, um abzustimmen, zu kommentieren und NSFW/NSFL zu sehen.")
+                .foregroundStyle(Color.pr0Secondary)
+            Button("Anmelden") { app.showsLogin = true }
+                .buttonStyle(.borderedProminent)
+                .padding(.top, 4)
+        }
+    }
 
     var body: some View {
         if let name = session.userName {
             ProfileScreen(name: name) {
-                // Kept on one page in Book Mode, as on the logged-out screen.
                 AccountSettingsList().frame(maxWidth: 560, alignment: .leading)
             }
             .id(name)
         } else {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Nicht angemeldet").font(.title2.bold())
-                        Text("Melde dich an, um abzustimmen, zu kommentieren und NSFW/NSFL zu sehen.")
-                            .foregroundStyle(Color.pr0Secondary)
-                        Button("Anmelden") { app.showsLogin = true }
-                            .buttonStyle(.borderedProminent)
-                            .padding(.top, 4)
+                Group {
+                    if sizeClass == .regular {
+                        HStack(alignment: .top, spacing: (bookPages?.gap ?? 0) + 32) {
+                            loginPrompt.frame(maxWidth: .infinity, alignment: .leading)
+                            AccountSettingsList().frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 18) {
+                            loginPrompt
+                            AccountSettingsList()
+                        }
+                        .frame(maxWidth: 560, alignment: .leading)
                     }
-                    AccountSettingsList()
                 }
                 .padding(16)
-                .frame(maxWidth: 560, alignment: .leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(Color.pr0Background)

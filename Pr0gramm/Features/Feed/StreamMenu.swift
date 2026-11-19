@@ -48,6 +48,24 @@ struct StreamMenu<Label: View>: View {
     }
 }
 
+/// The feed's name with an orange chevron, as Feed and Reels show it.
+struct StreamMenuLabel: View {
+    let title: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(.title3.bold())
+                .foregroundStyle(Color.pr0Text)
+                .lineLimit(1)
+            MenuChevron(size: 13)
+        }
+        .frame(maxWidth: 260, alignment: .leading)
+        .frame(minHeight: 44)
+        .contentShape(.rect)
+    }
+}
+
 /// The orange chevron that marks a title as a menu.
 struct MenuChevron: View {
     var size: CGFloat

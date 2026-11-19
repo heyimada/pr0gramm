@@ -113,17 +113,17 @@ tap 'label="Zufall"' 5
 check "zufall loads" '"Feed: Zufall"'
 for attempt in {1..3}; do
     $ad swipe 150 300 750 300 > /dev/null 2>&1; sleep 3
-    shows '"Feed: Müll"' && break
+    shows '"Feed: müll"' && break
 done
-check "swipes back from zufall" '"Feed: Müll"'
+check "swipes back from zufall" '"Feed: müll"'
 for attempt in {1..3}; do
     $ad swipe 750 300 150 300 > /dev/null 2>&1; sleep 3
     shows '"Feed: Zufall"' && break
 done
 check "zufall stays as the last page" '"Feed: Zufall"'
 tap "$(ref '"Feed: ')" 2
-tap 'label="Müll"' 4
-fold_keeps "the third feed" '"Feed: Müll"'
+tap 'label="müll"' 4
+fold_keeps "the third feed" '"Feed: müll"'
 
 # Feed pages beside the shown one are in the tree too, so tap the visible grid by position.
 tap 'role=button label="Feed"' 3
