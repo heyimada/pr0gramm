@@ -6,13 +6,15 @@ struct ReelsScreen: View {
     @Environment(PlaybackSettings.self) private var playback
     @State private var store = ReelsFilterStore()
     @State private var selection: FeedSource?
+    /// The preset picked last, kept as the last page after swiping away from it.
+    @State private var preset: FeedSource?
     @State private var pool = ReelPlayerPool()
     @State private var insets = EdgeInsets()
     @State private var showsFilter = false
     @State private var appliedStartMuted = false
 
     private var sources: [FeedSource] {
-        library.sources(withSubscriptions: false, picked: selection)
+        library.sources(withSubscriptions: false, picked: preset)
     }
 
     private var current: FeedSource {
@@ -66,10 +68,15 @@ struct ReelsScreen: View {
         .onDisappear { pool.pauseAll() }
     }
 
+    private func pick(_ source: FeedSource) {
+        if case .preset = source { preset = source }
+        selection = source
+    }
+
     private var controls: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                StreamMenu(sources: sources, selection: Binding(get: { current }, set: { selection = $0 })) {
+                StreamMenu(sources: sources, selection: Binding(get: { current }, set: { pick($0) })) {
                     HStack(spacing: 6) {
                         Text(library.title(for: current))
                             .font(.system(size: 16, weight: .semibold))
@@ -77,7 +84,8 @@ struct ReelsScreen: View {
                             .lineLimit(1)
                         MenuChevron(size: 12)
                     }
-                    .fixedSize()
+                    .frame(maxWidth: 240, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 16)
                     .padding(.trailing, 14)
                     .frame(height: 40)

@@ -15,6 +15,8 @@ ok    login sheet
 FAIL  fold keeps reel 3 (Profil von Schlachsahne / Profil von maxschmuser / Profil von maxschmuser)
 ok    feed menu lists the presets
 ok    zufall loads
+ok    swipes back from zufall
+ok    zufall stays as the last page
 ok    fold keeps the third feed ("Feed: Müll")
 ok    fold keeps a post past the first ([navigation-bar] "maxschmuser")
 ok    search results

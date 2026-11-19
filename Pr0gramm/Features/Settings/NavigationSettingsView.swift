@@ -19,7 +19,8 @@ struct NavigationSettingsView: View {
                 // Distinct identities per section: sharing the tab id would make SwiftUI reuse the
                 // "Weitere" button row after adding, which then has no delete or move handle.
                 ForEach(app.tabOrder, id: \.shownID) { tab in
-                    row(tab)
+                    // Removing the tab you're in would close this screen mid-edit, e.g. Profil.
+                    row(tab).deleteDisabled(tab == app.tab)
                 }
                 .onMove { app.tabOrder.move(fromOffsets: $0, toOffset: $1) }
                 .onDelete { offsets in

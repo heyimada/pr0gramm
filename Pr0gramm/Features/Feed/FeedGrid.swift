@@ -96,7 +96,8 @@ private struct BookGridLayout {
         let candidates = widths.flatMap { width in
             (2...8).map { (width - CGFloat($0 - 1) * spacing) / CGFloat($0) }
         }
-        let inRange = candidates.filter(Self.sides.contains)
+        // A size no page can hold a single column of would push the grid past the fold.
+        let inRange = candidates.filter { side in Self.sides.contains(side) && widths.allSatisfy { $0 >= side } }
         let waste = { (side: CGFloat) in widths.reduce(0) { $0 + $1 - used(fit($1, side), side) } }
         let side = inRange.min { waste($0) < waste($1) } ?? min(candidates.max() ?? 0, Self.sides.upperBound)
         guard side > 0 else { return nil }

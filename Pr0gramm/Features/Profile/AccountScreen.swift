@@ -8,7 +8,11 @@ struct AccountScreen: View {
 
     var body: some View {
         if let name = session.userName {
-            ProfileScreen(name: name) { AccountSettingsList() }.id(name)
+            ProfileScreen(name: name) {
+                // Kept on one page in Book Mode, as on the logged-out screen.
+                AccountSettingsList().frame(maxWidth: 560, alignment: .leading)
+            }
+            .id(name)
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {

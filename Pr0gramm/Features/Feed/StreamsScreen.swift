@@ -4,16 +4,24 @@ struct StreamsScreen: View {
     @Environment(FeedLibrary.self) private var library
     @Environment(Session.self) private var session
     @State private var selection: FeedSource?
+    /// The preset picked last, kept as the last page so swiping away from it doesn't remove it
+    /// mid-swipe.
+    @State private var preset: FeedSource?
     @State private var cache = FeedCache()
     @State private var collapse = ScrollCollapse()
     @State private var switcherHeight: CGFloat = 56
 
     private var sources: [FeedSource] {
-        library.sources(withSubscriptions: true, picked: selection)
+        library.sources(withSubscriptions: true, picked: preset)
     }
 
     private var current: FeedSource {
         library.currentSource(picked: selection, in: sources)
+    }
+
+    private func pick(_ source: FeedSource) {
+        if case .preset = source { preset = source }
+        selection = source
     }
 
     var body: some View {
@@ -35,7 +43,7 @@ struct StreamsScreen: View {
         .background(Color.pr0Background)
         .onChange(of: current) { collapse.reset() }
         .overlay(alignment: .topLeading) {
-            StreamMenu(sources: sources, selection: Binding(get: { current }, set: { selection = $0 })) {
+            StreamMenu(sources: sources, selection: Binding(get: { current }, set: { pick($0) })) {
                 FeedTitle(title: library.title(for: current), subtitle: session.flags.summary,
                           isCollapsed: collapse.isCollapsed)
             }

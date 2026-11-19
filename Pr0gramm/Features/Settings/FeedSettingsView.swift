@@ -28,7 +28,7 @@ struct FeedSettingsView: View {
             } header: {
                 Text("Standard-Feed")
             } footer: {
-                Text("Damit starten Start, Feed und Reels. Tags und die Suche öffnen im selben Stream. Ist ein eigener Feed wegen der Filter ausgeblendet, gilt sein Stream.")
+                Text("Damit starten Feed und Reels. Tags und die Suche öffnen im selben Stream. Ist ein eigener Feed wegen der Filter ausgeblendet, gilt sein Stream.")
             }
 
             Section {

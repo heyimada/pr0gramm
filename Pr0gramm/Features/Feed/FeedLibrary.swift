@@ -61,8 +61,8 @@ final class FeedLibrary {
     /// The switcher's entries: beliebt · neu · müll, abos if wanted and logged in, then the visible
     /// custom feeds. Feeds bound to filters that are all off, and locked protected feeds, are left out.
     ///
-    /// The presets are picked from the feed menu only. A picked preset is appended as the last page,
-    /// because the pager builds every page up front and each one loads its feed.
+    /// The presets are picked from the feed menu only. The last picked preset is appended as the last
+    /// page, because the pager builds every page up front and each one loads its feed.
     func sources(withSubscriptions: Bool, picked: FeedSource? = nil) -> [FeedSource] {
         let base = (FeedStream.searchable + (withSubscriptions ? [.subscribed] : []))
             .filter { session.isLoggedIn || !$0.requiresLogin }.map(FeedSource.stream)

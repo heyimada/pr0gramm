@@ -111,6 +111,16 @@ tap "$(ref '"Feed: ')" 2
 check "feed menu lists the presets" '"Best of"'
 tap 'label="Zufall"' 5
 check "zufall loads" '"Feed: Zufall"'
+for attempt in {1..3}; do
+    $ad swipe 150 300 750 300 > /dev/null 2>&1; sleep 3
+    shows '"Feed: Müll"' && break
+done
+check "swipes back from zufall" '"Feed: Müll"'
+for attempt in {1..3}; do
+    $ad swipe 750 300 150 300 > /dev/null 2>&1; sleep 3
+    shows '"Feed: Zufall"' && break
+done
+check "zufall stays as the last page" '"Feed: Zufall"'
 tap "$(ref '"Feed: ')" 2
 tap 'label="Müll"' 4
 fold_keeps "the third feed" '"Feed: Müll"'
