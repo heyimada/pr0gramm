@@ -12,19 +12,21 @@ struct DownloadsScreen: View {
                                        description: Text("Tippe bei einem Post auf ↓, um ihn offline zu speichern."))
                     .padding(.top, 120)
             } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Downloads").font(.largeTitle.bold())
+                    Text("\(store.downloads.count == 1 ? "1 Post" : "\(store.downloads.count) Posts"), \(ByteCountFormatter.string(fromByteCount: store.totalBytes, countStyle: .file)) auf diesem Gerät")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.pr0Secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+                .padding(.bottom, 10)
+
                 LazyVGrid(columns: ThumbnailView.thumbnailColumns(compact: sizeClass == .compact), spacing: ThumbnailView.spacing) {
                     ForEach(store.downloads) { download in
                         NavigationLink(value: Route.download(download.id)) {
                             ThumbnailView(item: download.item)
-                                .overlay(alignment: .bottomTrailing) {
-                                    if download.item.isVideo {
-                                        Image(systemName: "play.fill")
-                                            .font(.caption2)
-                                            .padding(5)
-                                            .background(.black.opacity(0.55), in: .circle)
-                                            .padding(4)
-                                    }
-                                }
                         }
                         .buttonStyle(.plain)
                         .contextMenu { DownloadActions(download: download) }

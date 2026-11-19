@@ -151,7 +151,7 @@ private struct CommentRow: View {
                         .accessibilityHint(isCollapsed ? "Aufklappen" : "Einklappen")
                     }
                     Spacer(minLength: 8)
-                    CommentVotes(id: node.comment.id, score: node.comment.score, created: node.comment.createdAt)
+                    CommentVotes(comment: node.comment)
                 }
                 .padding(.top, -6)
             }
@@ -206,15 +206,13 @@ private struct CommentRow: View {
 struct CommentVotes: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
-    let id: Int
-    let score: Int
-    let created: Date
+    let comment: Comment
 
     var body: some View {
-        let vote = session.vote(for: .comment, id: id)
+        let vote = session.vote(for: .comment, id: comment.id)
         HStack(spacing: 0) {
             button(value: 1, current: vote, symbol: "plus", label: "Plus", color: .pr0Orange)
-            ScoreView(score: score, created: created)
+            ScoreView(score: session.score(of: comment), created: comment.createdAt)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(vote > 0 ? Color.pr0Orange : vote < 0 ? Color.voteDown : Color.pr0Text)
                 .frame(minWidth: 34)
@@ -226,7 +224,7 @@ struct CommentVotes: View {
     private func button(value: Int, current: Int, symbol: String, label: String, color: Color) -> some View {
         let active = current == value
         return Button {
-            Task { await app.toggleVote(.comment, id: id, value) }
+            Task { await app.toggleVote(.comment, id: comment.id, value) }
         } label: {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .bold))

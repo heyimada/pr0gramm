@@ -189,6 +189,7 @@ struct ItemInfoBar: View {
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Hochgeladen von \(item.user)")
 
                 Spacer(minLength: 8)
 

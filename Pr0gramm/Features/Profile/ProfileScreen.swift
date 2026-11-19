@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProfileScreen<Extras: View>: View {
     @Environment(Session.self) private var session
+    @Environment(\.bookPages) private var bookPages
     let name: String
     /// Shown between the header and the uploads, e.g. the settings on your own profile.
     @ViewBuilder let extras: Extras
@@ -16,13 +17,34 @@ struct ProfileScreen<Extras: View>: View {
     }
 
     var body: some View {
-        FeedGrid(model: uploads) {
-            VStack(alignment: .leading, spacing: 18) {
-                ProfileHeader(name: name, profile: profile, error: error)
-                extras
-                Text("Hochlads").pr0SectionHeader()
+        Group {
+            if bookPages != nil, #available(iOS 27.1, visionOS 27.1, *) {
+                // Book Mode: who it is on one page, what they uploaded on the other.
+                ArrangementView {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 18) {
+                            ProfileHeader(name: name, profile: profile, error: error)
+                            extras
+                        }
+                        .padding(16)
+                    }
+                    .background(Color.pr0Background)
+                } secondary: {
+                    FeedGrid(model: uploads) {
+                        Text("Hochlads").pr0SectionHeader().padding(16)
+                    }
+                }
+                .arrangementViewStyle(.split)
+            } else {
+                FeedGrid(model: uploads) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        ProfileHeader(name: name, profile: profile, error: error)
+                        extras
+                        Text("Hochlads").pr0SectionHeader()
+                    }
+                    .padding(16)
+                }
             }
-            .padding(16)
         }
         .navigationTitle(name)
         .task(id: session.flags) { await load() }
@@ -71,14 +93,17 @@ private struct ProfileHeader: View {
             }
 
             if let profile {
-                HStack(alignment: .lastTextBaseline, spacing: 26) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(profile.user.score, format: .number)
-                            .font(.system(size: 44, weight: .bold))
-                            .monospacedDigit()
-                        Text("Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
-                    }
-                    .accessibilityElement(children: .combine)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(profile.user.score, format: .number)
+                        .font(.system(size: 44, weight: .bold))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Text("Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
+                }
+                .accessibilityElement(children: .combine)
+
+                HStack(spacing: 26) {
                     if let count = profile.uploadCount { stat(count, "Hochlads") }
                     if let count = profile.commentCount { stat(count, "Kommentare") }
                     if let count = profile.tagCount { stat(count, "Tags") }

@@ -21,7 +21,7 @@ final class Session {
     private(set) var votes: [VoteTarget: [Int: Int]] = [:]
     /// The vote each server copy of a post (its id and counts) was first shown with.
     @ObservationIgnored private var votesWhenFirstShown: [ServerCopy: Int] = [:]
-    private struct ServerCopy: Hashable { let id, up, down: Int }
+    private struct ServerCopy: Hashable { let target: VoteTarget; let id, up, down: Int }
 
     private let defaults: UserDefaults
     private var syncOffset: Int
@@ -109,11 +109,19 @@ final class Session {
     /// so only changes made since then are added. That vote is taken as the one this server copy
     /// of the post was first shown with; a reloaded copy with new counts starts over.
     func score(of item: FeedItem) -> Int {
-        let vote = vote(for: .item, id: item.id)
-        let copy = ServerCopy(id: item.id, up: item.up, down: item.down)
+        score(.item, id: item.id, up: item.up, down: item.down)
+    }
+
+    func score(of comment: Comment) -> Int {
+        score(.comment, id: comment.id, up: comment.up, down: comment.down)
+    }
+
+    private func score(_ target: VoteTarget, id: Int, up: Int, down: Int) -> Int {
+        let vote = vote(for: target, id: id)
+        let copy = ServerCopy(target: target, id: id, up: up, down: down)
         let known = votesWhenFirstShown[copy] ?? vote
         votesWhenFirstShown[copy] = known
-        return item.score + vote - known
+        return up - down + vote - known
     }
 
     func toggleVote(_ target: VoteTarget, id: Int, _ value: Int) async throws {
