@@ -27,6 +27,16 @@ struct ThumbnailView: View {
                     }
                 }
             }
+            .overlay(alignment: .bottomLeading) {
+                if item.isVideo {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.6), radius: 2, y: 1)
+                        .padding(7)
+                        .accessibilityHidden(true)
+                }
+            }
             .clipped()
             .contentShape(.rect)
             .accessibilityElement()

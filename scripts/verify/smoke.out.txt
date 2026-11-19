@@ -10,7 +10,7 @@ ok    settings
 ok    settings feeds
 ok    settings navigation
 ok    login sheet
-FAIL  fold keeps reel 3 (Profil von Jalapenis / Profil von Anonyschmus / Profil von Anonyschmus)
+FAIL  fold keeps reel 3 (Profil von Nikux3 / Profil von maxschmuser / Profil von maxschmuser)
 ok    feed menu lists the presets
 ok    zufall loads
 ok    fold keeps the third feed ("Feed: Müll")

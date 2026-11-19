@@ -76,17 +76,15 @@ struct Wordmark: View {
     }
 }
 
-/// Dark round toolbar button drawn by the app instead of the shared glass capsule.
+/// A plain toolbar icon with a round hit area, drawn without the system's glass capsule.
 struct BarCircle<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
         content
-            .font(.system(size: 15, weight: .semibold))
+            .font(.system(size: 17, weight: .semibold))
             .foregroundStyle(Color.pr0Text)
             .frame(width: 34, height: 34)
-            .background(Color.pr0Bar, in: .circle)
-            .overlay(Circle().strokeBorder(.white.opacity(0.08)))
             .contentShape(.circle)
     }
 }

@@ -110,8 +110,10 @@ struct ReelsScreen: View {
                         .contentShape(.rect)
                 }
             }
-            .padding(.leading, 12)
+            // Clear of the display's rounded corner, which the top safe area doesn't cover.
+            .padding(.leading, 24)
             .padding(.trailing, 6)
+            .padding(.top, 10)
             .shadow(color: .black.opacity(0.4), radius: 6)
 
             if store.filter.hasTagFilter {

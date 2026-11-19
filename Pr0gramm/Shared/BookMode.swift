@@ -15,28 +15,9 @@ extension EnvironmentValues {
 }
 
 extension View {
-    /// In Book Mode, centres this view on the leading page instead of the whole width.
-    func centeredOnLeadingPage() -> some View {
-        modifier(LeadingPageCentering())
-    }
-
     /// Publishes `bookPages` to everything inside. Apply once, at the root of a window.
     func readsBookPages() -> some View {
         modifier(BookPagesReader())
-    }
-}
-
-private struct LeadingPageCentering: ViewModifier {
-    @Environment(\.bookPages) private var bookPages
-
-    func body(content: Content) -> some View {
-        if let pages = bookPages {
-            content
-                .frame(width: pages.leading.width)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-            content
-        }
     }
 }
 
