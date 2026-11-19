@@ -20,6 +20,10 @@ check() {
     local name=$1 pattern=$2
     if running && shows "$pattern"; then print "ok    $name"; else print "FAIL  $name"; failures=$((failures + 1)); fi
 }
+check_absent() {
+    local name=$1 pattern=$2
+    if running && ! shows "$pattern"; then print "ok    $name"; else print "FAIL  $name"; failures=$((failures + 1)); fi
+}
 tap() { $ad press "$1" > /dev/null 2>&1; sleep ${2:-2}; }
 ref() { $ad snapshot -i 2>&1 | grep -m1 -E "$1" | grep -oE '@e[0-9]+(~s[0-9]+)?'; }
 # The first label matching $1 whose element sits on screen. Lazy stacks keep neighbouring pages
@@ -43,11 +47,10 @@ first() {
 
 $ad fold open > /dev/null 2>&1
 $ad open de.azula.pr0gramm --relaunch > /dev/null 2>&1
-sleep 6
-check "start opens" '"Top 10 heute"|"Top 10"'
-
-tap 'role=button label="Feed"' 6
-check "feed tab" 'Post [0-9]+ von'
+sleep 10
+check "opens on the feed" 'Post [0-9]+ von'
+check "downloads and profil tabs" 'button "Downloads"|"Downloads"'
+check_absent "no start tab" 'role=button label="Start"|\[button\] "Start"'
 tap "$(ref '\[button\] "Post [0-9]+ von')" 5
 check "post opens" '"Teilen"'
 $ad back > /dev/null 2>&1; sleep 2
@@ -65,18 +68,19 @@ tap 'role=button label="Reels-Filter"' 3
 check "reels filter sheet" '"Nur Videos"'
 tap 'role=button label="Fertig"' 2
 
-tap 'role=button label="Start"' 2
-tap "$(ref '\[(popupbutton|button)\] "Konto"')" 1
-tap 'role=button label="Einstellungen"' 3
-check "settings" '"Feeds'
+tap 'role=button label="Feed"' 2
+tap 'role=button label="Konto"' 3
+check "account button opens profil" '"Profil" \[selected\]'
+check "profil lists the settings" '"Einstellungen"'
 tap "$(ref '"Feeds, ')" 3
 check "settings feeds" '"Feed hinzufügen"'
 $ad back > /dev/null 2>&1; sleep 2
 tap "$(ref '"Navigation"')" 3
 check "settings navigation" '"In der Leiste"'
 $ad back > /dev/null 2>&1; sleep 2
-tap 'role=button label="Fertig"' 2
-tap "$(ref '\[(popupbutton|button)\] "Konto"')" 1
+tap "$(ref '"Einstellungen"')" 3
+check "settings" '\[navigation-bar\] "Einstellungen"'
+$ad back > /dev/null 2>&1; sleep 2
 tap 'role=button label="Anmelden"' 4
 check "login sheet" '"Captcha-Bild, tippen für ein neues"'
 tap 'role=button label="Abbrechen"' 2
@@ -103,13 +107,23 @@ fold_keeps "reel 3" 'Profil von [^"]+'
 
 tap 'role=button label="Feed"' 3
 sleep 2
-collapsed=$(ref 'Feeds anzeigen')
-[[ -n $collapsed ]] && tap "$collapsed" 2
+tap "$(ref '"Feed: ')" 2
+check "feed menu lists the presets" '"Best of"'
+tap 'label="Zufall"' 5
+check "zufall loads" '"Feed: Zufall"'
 for attempt in {1..3}; do
-    tap 'role=button label="müll"' 3
-    shows '"müll" \[selected\]' && break
+    $ad swipe 150 300 750 300 > /dev/null 2>&1; sleep 3
+    shows '"Feed: müll"' && break
 done
-fold_keeps "the third feed" '"müll" \[selected\]'
+check "swipes back from zufall" '"Feed: müll"'
+for attempt in {1..3}; do
+    $ad swipe 750 300 150 300 > /dev/null 2>&1; sleep 3
+    shows '"Feed: Zufall"' && break
+done
+check "zufall stays as the last page" '"Feed: Zufall"'
+tap "$(ref '"Feed: ')" 2
+tap 'label="müll"' 4
+fold_keeps "the third feed" '"Feed: müll"'
 
 # Feed pages beside the shown one are in the tree too, so tap the visible grid by position.
 tap 'role=button label="Feed"' 3

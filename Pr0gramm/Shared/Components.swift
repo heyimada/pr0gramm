@@ -108,8 +108,6 @@ struct SegmentCapsule<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
     let title: (Value) -> String
-    /// Lets the glass morph into another shape with the same ID, see `CollapsingSegmentCapsule`.
-    var glassNamespace: Namespace.ID?
     @Namespace private var namespace
 
     var body: some View {
@@ -127,7 +125,6 @@ struct SegmentCapsule<Value: Hashable>: View {
         .glassBackgroundEffect(in: .capsule)
         #else
         .glassEffect(.regular, in: .capsule)
-        .modifier(GlassID(namespace: glassNamespace))
         #endif
     }
 
@@ -161,60 +158,6 @@ struct SegmentCapsule<Value: Hashable>: View {
         .fixedSize()
     }
 }
-
-private let capsuleGlassID = "capsule"
-
-struct CollapsingSegmentCapsule<Value: Hashable>: View {
-    let options: [Value]
-    @Binding var selection: Value
-    let title: (Value) -> String
-    let isCollapsed: Bool
-    let collapsedHint: String
-    let onExpand: () -> Void
-    @Namespace private var glass
-
-    var body: some View {
-        #if os(visionOS)
-        SegmentCapsule(options: options, selection: $selection, title: title)
-        #else
-        GlassEffectContainer {
-            if isCollapsed {
-                Button(action: onExpand) {
-                    HStack(spacing: 5) {
-                        Text(title(selection)).lineLimit(1)
-                        Image(systemName: "chevron.down").font(.caption2.weight(.bold))
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.pr0Text)
-                    .padding(.horizontal, 14)
-                    .frame(height: 34)
-                    .contentShape(.capsule)
-                }
-                .buttonStyle(.plain)
-                .glassEffect(.regular.interactive(), in: .capsule)
-                .glassEffectID(capsuleGlassID, in: glass)
-                .accessibilityLabel("\(title(selection)), \(collapsedHint)")
-            } else {
-                SegmentCapsule(options: options, selection: $selection, title: title, glassNamespace: glass)
-            }
-        }
-        #endif
-    }
-}
-
-#if !os(visionOS)
-private struct GlassID: ViewModifier {
-    let namespace: Namespace.ID?
-
-    func body(content: Content) -> some View {
-        if let namespace {
-            content.glassEffectID(capsuleGlassID, in: namespace)
-        } else {
-            content
-        }
-    }
-}
-#endif
 
 extension View {
     func pr0SectionHeader() -> some View {

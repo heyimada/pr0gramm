@@ -112,7 +112,6 @@ private struct TabStack: View {
                 case .subscribed: StreamFeed(stream: .subscribed)
                 case .profile: AccountScreen()
                 case .downloads: DownloadsScreen()
-                case .home: HomeScreen()
                 case .feed: StreamsScreen()
                 case .reels: ReelsScreen()
                 case .search: SearchScreen()

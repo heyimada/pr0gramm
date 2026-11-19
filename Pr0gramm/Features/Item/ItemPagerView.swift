@@ -37,7 +37,11 @@ struct ItemPagerView: View {
         }
         .overlay(alignment: .bottom) { PagingRetry(model: model).padding(.bottom, 24) }
         .background(Color.pr0Background)
+        // The title stays for VoiceOver but isn't drawn: the uploader's name heads the details.
         .navigationTitle(model.items.first { $0.id == currentID }?.user ?? "")
+        #if os(iOS)
+        .toolbar { ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) } }
+        #endif
         #if os(iOS)
         .toolbar(.hidden, for: .tabBar)
         #endif

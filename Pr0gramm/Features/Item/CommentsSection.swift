@@ -115,45 +115,58 @@ private struct CommentRow: View {
                     .padding(.trailing, 10)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
-                    VoteButtons(target: .comment, id: node.comment.id, size: 20)
-                        .padding(.top, 1)
-                    Text(CommentText.attributed(node.comment.content))
-                        .font(.body)
-                        .foregroundStyle(.white)
-                        .tint(.pr0Mention)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+            VStack(alignment: .leading, spacing: 6) {
+                header
 
-                footer
+                Text(CommentText.attributed(node.comment.content))
+                    .font(.body)
+                    .foregroundStyle(.white)
+                    .tint(.pr0Mention)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                if node.replyCount > 0 {
-                    Button(action: onToggle) {
-                        Text(isCollapsed
-                             ? (node.replyCount == 1 ? "1 Antwort anzeigen" : "\(node.replyCount) Antworten anzeigen")
-                             : (node.replyCount == 1 ? "1 Antwort" : "\(node.replyCount) Antworten"))
-                            .font(.caption)
-                            .foregroundStyle(Color.pr0Orange)
+                HStack(spacing: 12) {
+                    if session.isLoggedIn {
+                        Button(action: onReply) {
+                            Label("Antworten", systemImage: "arrowshape.turn.up.left")
+                                .font(.footnote)
+                                .foregroundStyle(Color.pr0Secondary)
+                                .frame(minHeight: 44)
+                                .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(isCollapsed ? "Aufklappen" : "Einklappen")
+                    if node.replyCount > 0 {
+                        Button(action: onToggle) {
+                            Text(isCollapsed
+                                 ? (node.replyCount == 1 ? "1 Antwort anzeigen" : "\(node.replyCount) Antworten anzeigen")
+                                 : (node.replyCount == 1 ? "1 Antwort" : "\(node.replyCount) Antworten"))
+                                .font(.footnote)
+                                .foregroundStyle(Color.pr0Orange)
+                                .frame(minHeight: 44)
+                                .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(isCollapsed ? "Aufklappen" : "Einklappen")
+                    }
+                    Spacer(minLength: 8)
+                    CommentVotes(comment: node.comment)
                 }
+                .padding(.top, -6)
             }
-            .padding(.vertical, 10)
+            .padding(.top, 10)
         }
     }
 
-    private var footer: some View {
+    private var header: some View {
         HStack(spacing: 6) {
             NavigationLink(value: Route.user(node.comment.name)) {
                 HStack(spacing: 6) {
                     Avatar(name: node.comment.name, size: 24)
                     if isOP { OPBadge() }
                     Text(node.comment.name)
-                        .font(.subheadline)
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.pr0Text)
                         .lineLimit(1)
                 }
@@ -161,27 +174,12 @@ private struct CommentRow: View {
             .buttonStyle(.plain)
 
             MarkDot(mark: node.comment.mark, size: 7)
-            ScoreView(score: node.comment.score, created: node.comment.createdAt)
-                .font(.caption)
-                .foregroundStyle(Color.pr0Secondary)
             Text(node.comment.createdAt.pr0Age)
                 .font(.caption)
                 .foregroundStyle(Color.pr0Secondary)
                 .lineLimit(1)
 
             Spacer(minLength: 4)
-
-            if session.isLoggedIn {
-                Button(action: onReply) {
-                    Image(systemName: "arrowshape.turn.up.left.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.pr0Orange)
-                        .frame(width: 32, height: 28)
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Antworten")
-            }
 
             Menu {
                 Button("Text kopieren", systemImage: "doc.on.doc") {
@@ -193,10 +191,9 @@ private struct CommentRow: View {
                 }
             } label: {
                 Image(systemName: "ellipsis")
-                    .rotationEffect(.degrees(90))
                     .font(.subheadline)
                     .foregroundStyle(Color.pr0Secondary)
-                    .frame(width: 24, height: 28)
+                    .frame(width: 32, height: 28)
                     .contentShape(.rect)
             }
             .accessibilityLabel("Aktionen")
@@ -204,32 +201,36 @@ private struct CommentRow: View {
     }
 }
 
-struct VoteButtons: View {
+/// Plus, the comment's score and minus in one row. Each button gets its own column and a 44 pt
+/// tall hit area, so the two never overlap.
+struct CommentVotes: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
-    let target: VoteTarget
-    let id: Int
-    var size: CGFloat = 20
+    let comment: Comment
 
     var body: some View {
-        let vote = session.vote(for: target, id: id)
-        VStack(spacing: size * 0.3) {
-            button(value: 1, current: vote, symbol: "plus.circle", label: "Plus")
-            button(value: -1, current: vote, symbol: "minus.circle", label: "Minus")
+        let vote = session.vote(for: .comment, id: comment.id)
+        HStack(spacing: 0) {
+            button(value: 1, current: vote, symbol: "plus", label: "Plus", color: .pr0Orange)
+            ScoreView(score: session.score(of: comment), created: comment.createdAt)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(vote > 0 ? Color.pr0Orange : vote < 0 ? Color.voteDown : Color.pr0Text)
+                .frame(minWidth: 34)
+            button(value: -1, current: vote, symbol: "minus", label: "Minus", color: .voteDown)
         }
+        .animation(.snappy, value: vote)
     }
 
-    private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
+    private func button(value: Int, current: Int, symbol: String, label: String, color: Color) -> some View {
         let active = current == value
         return Button {
-            Task { await app.toggleVote(target, id: id, value) }
+            Task { await app.toggleVote(.comment, id: comment.id, value) }
         } label: {
-            Image(systemName: active ? "\(symbol).fill" : symbol)
-                .resizable()
-                .fontWeight(.light)
-                .frame(width: size, height: size)
-                .foregroundStyle(active ? Color.pr0Orange : Color.pr0Secondary)
-                .contentShape(.rect.inset(by: -6))
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(active ? color : Color.pr0Secondary)
+                .frame(width: 34, height: 44)
+                .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: active)

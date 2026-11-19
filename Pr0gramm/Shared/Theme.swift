@@ -11,13 +11,14 @@ extension Color {
 
     static let pr0Orange = Color(hex: 0xEE4D2E)
     static let pr0Background = Color(hex: 0x161618)
-    static let pr0Bar = Color(hex: 0x020306)
     static let pr0Pill = Color(hex: 0x252527)
     static let pr0Secondary = Color(hex: 0xA7A7A8)
     static let pr0ThreadLine = Color(hex: 0x333335)
     static let pr0Text = Color(hex: 0xF2F5F4)
     static let pr0Mention = Color(hex: 0x75C0C7)
     static let upvoteGreen = Color(hex: 0x5BB91C)
+    /// A minus vote, quieter than the orange of a plus.
+    static let voteDown = Color(hex: 0x636366)
 
     static func mark(_ mark: Int) -> Color { Color(hex: UserMark.hex(mark)) }
 

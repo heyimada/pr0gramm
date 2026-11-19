@@ -6,13 +6,15 @@ struct ReelsScreen: View {
     @Environment(PlaybackSettings.self) private var playback
     @State private var store = ReelsFilterStore()
     @State private var selection: FeedSource?
+    /// The preset picked last, kept as the last page after swiping away from it.
+    @State private var preset: FeedSource?
     @State private var pool = ReelPlayerPool()
     @State private var insets = EdgeInsets()
     @State private var showsFilter = false
     @State private var appliedStartMuted = false
 
     private var sources: [FeedSource] {
-        library.sources(withSubscriptions: false)
+        library.sources(withSubscriptions: false, picked: preset)
     }
 
     private var current: FeedSource {
@@ -66,9 +68,20 @@ struct ReelsScreen: View {
         .onDisappear { pool.pauseAll() }
     }
 
+    private func pick(_ source: FeedSource) {
+        if case .preset = source { preset = source }
+        selection = source
+    }
+
     private var controls: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
+                StreamMenu(sources: sources, selection: Binding(get: { current }, set: { pick($0) })) {
+                    StreamMenuLabel(title: library.title(for: current))
+                }
+
+                Spacer(minLength: 0)
+
                 Button { showsFilter = true } label: {
                     Image(systemName: "slider.horizontal.3")
                         .font(.system(size: 20, weight: .semibold))
@@ -79,33 +92,6 @@ struct ReelsScreen: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Reels-Filter")
 
-                ScrollViewReader { proxy in
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 14) {
-                            ForEach(sources, id: \.self) { source in
-                                let isOn = source == current
-                                Button {
-                                    withAnimation(.snappy(duration: 0.25)) { selection = source }
-                                } label: {
-                                    Text(library.title(for: source))
-                                        .font(.system(size: 22, weight: .bold))
-                                        .foregroundStyle(.white.opacity(isOn ? 1 : 0.5))
-                                        .lineLimit(1)
-                                        .padding(.vertical, 6)
-                                        .contentShape(.rect)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityAddTraits(isOn ? .isSelected : [])
-                                .id(source)
-                            }
-                        }
-                        .padding(.trailing, 8)
-                    }
-                    .scrollIndicators(.hidden)
-                    .onAppear { proxy.scrollTo(current, anchor: .center) }
-                    .onChange(of: current) { withAnimation { proxy.scrollTo(current, anchor: .center) } }
-                }
-
                 // SFW / NSFW / NSFL / POL, which the hidden toolbar would otherwise hold.
                 FilterMenu {
                     Image(systemName: "line.3.horizontal.decrease")
@@ -115,8 +101,10 @@ struct ReelsScreen: View {
                         .contentShape(.rect)
                 }
             }
-            .padding(.leading, 12)
+            // Clear of the display's rounded corner, which the top safe area doesn't cover.
+            .padding(.leading, 24)
             .padding(.trailing, 6)
+            .padding(.top, 10)
             .shadow(color: .black.opacity(0.4), radius: 6)
 
             if store.filter.hasTagFilter {

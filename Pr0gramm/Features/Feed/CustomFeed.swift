@@ -60,5 +60,6 @@ struct CustomFeed: Codable, Hashable, Identifiable {
 
 nonisolated enum FeedSource: Hashable, Codable, Sendable {
     case stream(FeedStream)
+    case preset(FeedPreset)
     case custom(CustomFeed.ID)
 }

@@ -1,19 +1,26 @@
-ok    start opens
-ok    feed tab
+ok    opens on the feed
+ok    downloads and profil tabs
+ok    no start tab
 ok    post opens
 ok    reels
 ok    reels comment sheet
 ok    tag opens inside the sheet
 ok    reels filter sheet
-ok    settings
+ok    account button opens profil
+ok    profil lists the settings
 ok    settings feeds
 ok    settings navigation
+ok    settings
 ok    login sheet
-ok    fold keeps reel 3 (Profil von Gaywittertierchen)
-ok    fold keeps the third feed ("müll" [selected])
-ok    fold keeps a post past the first ([navigation-bar] "Clusterfuck")
+FAIL  fold keeps reel 3 (Profil von gummitod / Profil von Krasmorak / Profil von Krasmorak)
+ok    feed menu lists the presets
+ok    zufall loads
+ok    swipes back from zufall
+ok    zufall stays as the last page
+ok    fold keeps the third feed ("Feed: müll")
+ok    fold keeps a post past the first ([navigation-bar] "Glatzc0ck")
 ok    search results
 ok    feed editor
 ok    saved search shows as saved
 ok    removed again
-0 failed
+1 failed
