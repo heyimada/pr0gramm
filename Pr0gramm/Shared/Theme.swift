@@ -17,6 +17,8 @@ extension Color {
     static let pr0Text = Color(hex: 0xF2F5F4)
     static let pr0Mention = Color(hex: 0x75C0C7)
     static let upvoteGreen = Color(hex: 0x5BB91C)
+    /// A minus vote, quieter than the orange of a plus.
+    static let voteDown = Color(hex: 0x636366)
 
     static func mark(_ mark: Int) -> Color { Color(hex: UserMark.hex(mark)) }
 

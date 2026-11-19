@@ -180,7 +180,7 @@ struct ItemInfoBar: View {
                                 Text(item.user).font(.headline).lineLimit(1)
                                 MarkDot(mark: item.mark)
                             }
-                            Text("\(item.createdAt.pr0Age) · \(UserMark.name(item.mark))")
+                            Text("\(Text(UserMark.name(item.mark)).foregroundStyle(Color.mark(item.mark))), vor \(item.createdAt.pr0Age)")
                                 .font(.footnote)
                                 .foregroundStyle(Color.pr0Secondary)
                                 .lineLimit(1)
@@ -213,9 +213,10 @@ struct ItemInfoBar: View {
                 .accessibilityLabel("Weitere Aktionen")
             }
 
+            BenisBar(item: item)
+
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
-                    VoteCapsule(item: item)
                     ShareLink(item: item.webURL) {
                         ActionPillLabel(title: "Teilen", symbol: "square.and.arrow.up")
                     }
@@ -238,37 +239,41 @@ struct ItemScore: View {
     }
 }
 
-struct VoteCapsule: View {
+/// The post's Benis as a large number, with plus and minus as full-size round buttons.
+struct BenisBar: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     let item: FeedItem
+
     var body: some View {
         let vote = session.vote(for: .item, id: item.id)
-        HStack(spacing: 0) {
-            button(value: 1, current: vote, symbol: "plus", label: "Plus")
-            ItemScore(item: item)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(vote == 0 ? Color.pr0Text : Color.pr0Orange)
-                .frame(minWidth: 36)
-            button(value: -1, current: vote, symbol: "minus", label: "Minus")
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                ItemScore(item: item)
+                    // The hidden-score eye stays icon-sized; only the number is set large.
+                    .font(item.createdAt.isScoreHidden ? .title2 : .system(size: 44, weight: .bold))
+                    .foregroundStyle(Color.pr0Text)
+                Text("Benis").font(.caption).foregroundStyle(Color.pr0Secondary)
+            }
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 8)
+            button(value: 1, current: vote, symbol: "plus", label: "Plus", color: .pr0Orange)
+            button(value: -1, current: vote, symbol: "minus", label: "Minus", color: .voteDown)
         }
-        .frame(height: 38)
-        .background(Color.pr0Pill, in: .capsule)
         .animation(.snappy, value: vote)
     }
 
-    private func button(value: Int, current: Int, symbol: String, label: String) -> some View {
+    private func button(value: Int, current: Int, symbol: String, label: String, color: Color) -> some View {
         let active = current == value
         return Button {
             Task { await app.toggleVote(.item, id: item.id, value) }
         } label: {
             Image(systemName: symbol)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(active ? Color.white : Color.pr0Text)
-                .frame(width: 30, height: 30)
-                .background(active ? Color.pr0Orange : .clear, in: .circle)
-                .frame(width: 42, height: 38)
-                .contentShape(.rect)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(Color.pr0Text)
+                .frame(width: 44, height: 44)
+                .background(active ? color : Color.pr0Pill, in: .circle)
+                .contentShape(.circle)
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: active)
