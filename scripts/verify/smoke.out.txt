@@ -10,9 +10,11 @@ ok    settings
 ok    settings feeds
 ok    settings navigation
 ok    login sheet
-FAIL  fold keeps reel 3 (Profil von schlafl0s / Profil von schlafl0s / Profil von Jalapenis)
-ok    fold keeps the third feed ("müll" [selected])
-ok    fold keeps a post past the first ([navigation-bar] "ZarGhalak")
+FAIL  fold keeps reel 3 (Profil von Jalapenis / Profil von Anonyschmus / Profil von Anonyschmus)
+ok    feed menu lists the presets
+ok    zufall loads
+ok    fold keeps the third feed ("Feed: Müll")
+ok    fold keeps a post past the first ([navigation-bar] "maxschmuser")
 ok    search results
 ok    feed editor
 ok    saved search shows as saved

@@ -12,7 +12,7 @@ struct ReelsScreen: View {
     @State private var appliedStartMuted = false
 
     private var sources: [FeedSource] {
-        library.sources(withSubscriptions: false)
+        library.sources(withSubscriptions: false, picked: selection)
     }
 
     private var current: FeedSource {
@@ -69,6 +69,28 @@ struct ReelsScreen: View {
     private var controls: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
+                StreamMenu(sources: sources, selection: Binding(get: { current }, set: { selection = $0 })) {
+                    HStack(spacing: 6) {
+                        Text(library.title(for: current))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        MenuChevron(size: 12)
+                    }
+                    .fixedSize()
+                    .padding(.leading, 16)
+                    .padding(.trailing, 14)
+                    .frame(height: 40)
+                    #if os(visionOS)
+                    .glassBackgroundEffect(in: .capsule)
+                    #else
+                    .glassEffect(.regular.interactive(), in: .capsule)
+                    #endif
+                    .contentShape(.capsule)
+                }
+
+                Spacer(minLength: 0)
+
                 Button { showsFilter = true } label: {
                     Image(systemName: "slider.horizontal.3")
                         .font(.system(size: 20, weight: .semibold))
@@ -78,33 +100,6 @@ struct ReelsScreen: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Reels-Filter")
-
-                ScrollViewReader { proxy in
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 14) {
-                            ForEach(sources, id: \.self) { source in
-                                let isOn = source == current
-                                Button {
-                                    withAnimation(.snappy(duration: 0.25)) { selection = source }
-                                } label: {
-                                    Text(library.title(for: source))
-                                        .font(.system(size: 22, weight: .bold))
-                                        .foregroundStyle(.white.opacity(isOn ? 1 : 0.5))
-                                        .lineLimit(1)
-                                        .padding(.vertical, 6)
-                                        .contentShape(.rect)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityAddTraits(isOn ? .isSelected : [])
-                                .id(source)
-                            }
-                        }
-                        .padding(.trailing, 8)
-                    }
-                    .scrollIndicators(.hidden)
-                    .onAppear { proxy.scrollTo(current, anchor: .center) }
-                    .onChange(of: current) { withAnimation { proxy.scrollTo(current, anchor: .center) } }
-                }
 
                 // SFW / NSFW / NSFL / POL, which the hidden toolbar would otherwise hold.
                 FilterMenu {

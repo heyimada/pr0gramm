@@ -23,6 +23,9 @@ final class FeedLibrary {
     /// app locks again whenever it goes to the background.
     private(set) var protectedFeedsUnlocked = false
 
+    /// Zufall's selection for this launch, so its pages keep one order while scrolling.
+    private let randomSeed = Int(Date().timeIntervalSince1970)
+
     private static let defaultSourceKey = "defaultFeed"
     private static let customFeedsKey = "customFeeds"
 
@@ -40,13 +43,15 @@ final class FeedLibrary {
     func query(for source: FeedSource) -> FeedQuery {
         switch source {
         case .stream(let stream): FeedQuery(stream: stream)
+        case .preset(let preset): preset.query(seed: randomSeed)
         case .custom(let id): customFeed(id)?.query ?? .top
         }
     }
 
     func title(for source: FeedSource) -> String {
         switch source {
-        case .stream(let stream): stream.title
+        case .stream(let stream): stream.title.capitalized
+        case .preset(let preset): preset.title
         case .custom(let id): customFeed(id)?.name ?? ""
         }
     }
@@ -55,10 +60,15 @@ final class FeedLibrary {
 
     /// The switcher's entries: beliebt · neu · müll, abos if wanted and logged in, then the visible
     /// custom feeds. Feeds bound to filters that are all off, and locked protected feeds, are left out.
-    func sources(withSubscriptions: Bool) -> [FeedSource] {
-        (FeedStream.searchable + (withSubscriptions ? [.subscribed] : []))
+    ///
+    /// The presets are picked from the feed menu only. A picked preset is appended as the last page,
+    /// because the pager builds every page up front and each one loads its feed.
+    func sources(withSubscriptions: Bool, picked: FeedSource? = nil) -> [FeedSource] {
+        let base = (FeedStream.searchable + (withSubscriptions ? [.subscribed] : []))
             .filter { session.isLoggedIn || !$0.requiresLogin }.map(FeedSource.stream)
             + customFeeds.filter { $0.isVisible(with: session.flags) && isAccessible($0) }.map { .custom($0.id) }
+        guard let picked, case .preset = picked else { return base }
+        return base + [picked]
     }
 
     /// The default feed, or its stream while the custom default is hidden by the content filter

@@ -106,13 +106,13 @@ fold_keeps "reel 3" 'Profil von [^"]+'
 
 tap 'role=button label="Feed"' 3
 sleep 2
-collapsed=$(ref 'Feeds anzeigen')
-[[ -n $collapsed ]] && tap "$collapsed" 2
-for attempt in {1..3}; do
-    tap 'role=button label="müll"' 3
-    shows '"müll" \[selected\]' && break
-done
-fold_keeps "the third feed" '"müll" \[selected\]'
+tap "$(ref '"Feed: ')" 2
+check "feed menu lists the presets" '"Best of"'
+tap 'label="Zufall"' 5
+check "zufall loads" '"Feed: Zufall"'
+tap "$(ref '"Feed: ')" 2
+tap 'label="Müll"' 4
+fold_keeps "the third feed" '"Feed: Müll"'
 
 # Feed pages beside the shown one are in the tree too, so tap the visible grid by position.
 tap 'role=button label="Feed"' 3

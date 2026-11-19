@@ -2,13 +2,14 @@ import SwiftUI
 
 struct StreamsScreen: View {
     @Environment(FeedLibrary.self) private var library
+    @Environment(Session.self) private var session
     @State private var selection: FeedSource?
     @State private var cache = FeedCache()
     @State private var collapse = ScrollCollapse()
     @State private var switcherHeight: CGFloat = 56
 
     private var sources: [FeedSource] {
-        library.sources(withSubscriptions: true)
+        library.sources(withSubscriptions: true, picked: selection)
     }
 
     private var current: FeedSource {
@@ -16,7 +17,7 @@ struct StreamsScreen: View {
     }
 
     var body: some View {
-        // Pages span the whole screen so posts scroll under the toolbar, the floating switcher and
+        // Pages span the whole screen so posts scroll under the toolbar, the floating title and
         // the tab bar; margins keep the first and last rows clear of them.
         GeometryReader { outer in
             let insets = outer.safeAreaInsets
@@ -33,18 +34,64 @@ struct StreamsScreen: View {
         }
         .background(Color.pr0Background)
         .onChange(of: current) { collapse.reset() }
-        .overlay(alignment: .top) {
-            CollapsingSegmentCapsule(options: sources, selection: Binding(get: { current }, set: { selection = $0 }),
-                                     title: library.title(for:), isCollapsed: collapse.isCollapsed, collapsedHint: "Feeds anzeigen", onExpand: collapse.expand)
-                .padding(.horizontal, 16)
-                .centeredOnLeadingPage()
-                .padding(.top, 8)
-                .padding(.bottom, 8)
+        .overlay(alignment: .topLeading) {
+            StreamMenu(sources: sources, selection: Binding(get: { current }, set: { selection = $0 })) {
+                FeedTitle(title: library.title(for: current), subtitle: session.flags.summary,
+                          isCollapsed: collapse.isCollapsed)
+            }
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+                .padding(.bottom, 10)
                 .onGeometryChange(for: CGFloat.self, of: \.size.height) { height in
                     // Only the expanded height counts, so collapsing doesn't shift the posts.
                     if !collapse.isCollapsed { switcherHeight = height }
                 }
         }
+    }
+}
+
+/// The feed's name as a large title over a subtitle, shrinking to a glass capsule once the grid
+/// scrolls down. Both open the feed menu.
+private struct FeedTitle: View {
+    let title: String
+    let subtitle: String
+    let isCollapsed: Bool
+
+    var body: some View {
+        Group {
+            if isCollapsed {
+                HStack(spacing: 6) {
+                    Text(title).font(.headline).lineLimit(1)
+                    MenuChevron(size: 12)
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 40)
+                #if os(visionOS)
+                .glassBackgroundEffect(in: .capsule)
+                #else
+                .glassEffect(.regular.interactive(), in: .capsule)
+                #endif
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(title).font(.largeTitle.bold()).lineLimit(1)
+                        MenuChevron(size: 18)
+                    }
+                    Text(subtitle).font(.subheadline).foregroundStyle(Color.pr0Secondary)
+                }
+                .background(alignment: .top) {
+                    // Keeps the title legible when it comes back over the grid mid-scroll.
+                    LinearGradient(colors: [Color.pr0Background, Color.pr0Background.opacity(0)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .padding(.horizontal, -400)
+                        .padding(.top, -200)
+                        .padding(.bottom, -24)
+                        .allowsHitTesting(false)
+                }
+            }
+        }
+        .foregroundStyle(Color.pr0Text)
+        .contentShape(.rect)
     }
 }
 
@@ -73,10 +120,6 @@ final class ScrollCollapse {
         } else if abs(delta) > Self.threshold {
             set(collapsed: !isCollapsed)
         }
-    }
-
-    func expand() {
-        set(collapsed: false)
     }
 
     func reset() {
